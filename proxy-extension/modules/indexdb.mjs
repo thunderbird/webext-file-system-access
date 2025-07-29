@@ -8,19 +8,19 @@ export function openDB() {
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
 
-            // Create permissions object store and assign it to a variable
+            // Create permissions object store.
             let permissionsStore;
             if (!db.objectStoreNames.contains("permissions")) {
                 permissionsStore = db.createObjectStore("permissions", { keyPath: "id", autoIncrement: true });
             } else {
                 permissionsStore = event.target.transaction.objectStore("permissions");
             }
-            // Create composite permission index if it doesn't exist
+            // Create composite permission index.
             if (!permissionsStore.indexNames.contains("permissionIndex")) {
                 permissionsStore.createIndex("permissionIndex", ["extensionId", "folderPath", "fileName"], { unique: true });
             }
 
-            // Create folders object store and assign it to a variable
+            // Create folders object store.
             let foldersStore;
             if (!db.objectStoreNames.contains("folders")) {
                 foldersStore = db.createObjectStore("folders", { keyPath: "folderId" });
@@ -28,7 +28,9 @@ export function openDB() {
                 foldersStore = event.target.transaction.objectStore("folders");
             }
             // Create an index to lookup paths, enforce unique paths.
-            foldersStore.createIndex("pathIndex", "folderPath", { unique: true });
+            if (!permissionsStore.indexNames.contains("pathIndex")) {
+                foldersStore.createIndex("pathIndex", "folderPath", { unique: true });
+            }
         };
     });
 }
@@ -104,7 +106,7 @@ export async function updatePermissions(newPermission, item) {
 
         if (record) {
             record.permission = newPermission;
-            // same primary key (id) → update
+            // Same primary key (id) = update.
             store.put(record);
             savedRecord = record;
         } else {
@@ -113,11 +115,11 @@ export async function updatePermissions(newPermission, item) {
                 folderPath: item.folderPath,
                 fileName: item.fileName,
                 permission: newPermission
-                // no id → autoIncrement will create one
+                // No id = autoIncrement will create one.
             };
             const addReq = store.add(newRecord);
             addReq.onsuccess = () => {
-                // capture generated id
+                // Capture generated id (even though we do not use it).
                 newRecord.id = addReq.result;
                 savedRecord = newRecord;
             };

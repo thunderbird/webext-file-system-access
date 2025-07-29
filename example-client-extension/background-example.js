@@ -25,7 +25,7 @@ if (fsaAvailable) {
     //let multipleFiles = await fsa({ command: "readFilesPicker", folderId: singleFile.folderId });
     //let folder = await fsa({ command: "readFolderPicker", folderId: singleFile.folderId });
 
-    // Should open the folder of the single file selection picker.
+    // Should open the folder used in the previous single file selection picker.
     let savedFile = await fsa({
         command: "saveFilePicker",
         file: new File(['1234567890'], 'text.txt', { type: 'plain/text' }),

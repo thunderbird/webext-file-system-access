@@ -42,18 +42,18 @@ export async function addItem(item, storeName) {
     const tx = db.transaction(storeName, "readwrite");
     const store = tx.objectStore(storeName);
     const request = store.add(item);
-    tx.oncomplete = () => resolve(request.result); // resolve with the inserted item's key
+    tx.oncomplete = () => resolve(request.result);
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
     return promise;
 }
 
 /**
- * Check if the usr has granted the requested permission for the given item.
+ * Check if the user has granted the requested permission for the given item.
  *
- * @param {integer} reqPermission -The permission value to check
- * @param {Object} item - An object that has extensionId, folderPath, fileName
- * @returns {Promise<Boolean>} Whether the permission was granted or not
+ * @param {integer} reqPermission - The permission value to check.
+ * @param {Object} item - An object that has extensionId, folderPath, fileName.
+ * @returns {Promise<Boolean>} Whether the permission was granted or not.
  */
 export async function hasPermissions(reqPermission, item) {
     const { promise, resolve, reject } = Promise.withResolvers();
@@ -84,9 +84,9 @@ export async function hasPermissions(reqPermission, item) {
 /**
  * Add or update the granted permission for the given item.
  *
- * @param {integer} newPermission - The permission value you want to store
- * @param {Object} item - An object that has extensionId, folderPath, fileName
- * @returns {Promise<Object>} The record that was written to the DB
+ * @param {integer} newPermission - The permission value to be stored.
+ * @param {Object} item - An object that has extensionId, folderPath, fileName.
+ * @returns {Promise<Object>} The record that was written to the DB.
  */
 export async function updatePermissions(newPermission, item) {
     const { promise, resolve, reject } = Promise.withResolvers();
@@ -134,13 +134,13 @@ export async function updatePermissions(newPermission, item) {
 }
 
 /**
- *  * Lookup a folderId by its folderPath
+ * Lookup a folderId by its folderPath.
  *
  * If the path already exists in the database, its associated folderId is returned.
- * If the path does not exist, a new UUID is generated, stored, and returned.
+ * If the path does not exist, a new folderId is generated, stored, and returned.
  *
  * @param {string} folderPath - The full path of the folder to look up or insert.
- * @returns {Promise<string>} A promise that resolves with the UUID of the folder.
+ * @returns {Promise<string>} A promise that resolves with the folderId.
  */
 export async function getFolderId(folderPath) {
     const db = await openDB();
@@ -183,8 +183,8 @@ export async function getFolderId(folderPath) {
 /**
  * Lookup a folderPath by its folderId.
  *
- * @param {string} folderId - The UUID of the folder.
- * @returns {Promise<string|null>} The folder path, or null if not found.
+ * @param {string} folderId - The folderId of the folder.
+ * @returns {Promise<string|null>} The folderPath, or null if not found.
  */
 export async function getFolderPath(folderId) {
     if (!folderId) {

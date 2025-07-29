@@ -45,45 +45,48 @@ async function hasPermissions(folderPath, fileName, reqPermissions) {
 }
 
 browser.runtime.onMessageExternal.addListener(async (request, sender) => {
-  if (request.command == "getVersion") {
-    const manifest = browser.runtime.getManifest();
-    return manifest.version;
-  }
-
   switch (request.command) {
+    case "getVersion":
+      {
+        const manifest = browser.runtime.getManifest();
+        return manifest.version;
+      }
     case "readFilePicker":
       {
-        let rv = await browser.FSA.readFilePicker(request);
-        let folderId = await updateFolderId(rv.folder.path);
+        let displayPath = await getFolderPath(request.folderId);
+        let picker = await browser.FSA.readFilePicker({ displayPath });
+        let folderId = await updateFolderId(picker.folder.path);
         // The user selected the file and thus gave permission to re-read the same
         // file at a later time (without using the file picker).
         // Note #1: Single one-time read via a file picker does not need the FSA add-on.
-        await updatePermissions(rv.folder.path, rv.file.name, P.READ);
+        await updatePermissions(picker.folder.path, picker.file.name, P.READ);
         await updateStorage();
         return {
-          file: rv.file,
+          file: picker.file,
           folderId,
         };
       }
-    
+
     case "readFilesPicker":
       {
-        let rv = await browser.FSA.readFilesPicker(request);
-        let folderId = await updateFolderId(rv.folder.path);
-        for (let file of rv.files) {
-          updatePermissions(rv.folder.path, file.name, P.READ);
+        let displayPath = await getFolderPath(request.folderId);
+        let picker = await browser.FSA.readFilesPicker({ displayPath });
+        let folderId = await updateFolderId(picker.folder.path);
+        for (let file of picker.files) {
+          updatePermissions(picker.folder.path, file.name, P.READ);
         }
         await updateStorage();
         return {
-          files: rv.files,
+          files: picker.files,
           folderId,
         };
       }
 
     case "readFolderPicker":
       {
-        let rv = await browser.FSA.readFolderPicker(request);
-        let folderId = await updateFolderId(rv.folder.path);
+        let displayPath = await getFolderPath(request.folderId);
+        let picker = await browser.FSA.readFolderPicker({ displayPath });
+        let folderId = await updateFolderId(picker.folder.path);
         // Permissions: TODO
         await updateStorage();
         return {
@@ -93,19 +96,20 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
 
     case "saveFilePicker":
       {
-        let rv = await browser.FSA.saveFilePicker(request);
-        let folderId = await updateFolderId(rv.folder.path);
-        await updatePermissions(rv.folder.path, rv.file.name, P.READ | P.WRITE);
+        let displayPath = await getFolderPath(request.folderId);
+        let picker = await browser.FSA.saveFilePicker(request.file, { displayPath });
+        let folderId = await updateFolderId(picker.folder.path);
+        await updatePermissions(picker.folder.path, picker.file.name, P.READ | P.WRITE);
         await updateStorage();
         return {
           file: {
-            name: rv.file.name
+            name: picker.file.name
           },
           folderId,
         };
       }
 
-      case "readFile": 
+    case "readFile":
       {
         // Do we have permissions?
         let folderPath = await getFolderPath(request.folderId);
@@ -118,21 +122,23 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
           console.log("No permission to read file", request.name)
           return null;
         }
-        return null;
-        //return browser.FSA.readFile(folderPath, request.name);
+        return browser.FSA.readFile(folderPath, request.name);
       }
-    
-      case "saveFile": 
+
+    case "writeFile":
       {
         // Do we have permissions?
         let folderPath = await getFolderPath(request.folderId);
+        if (!folderPath) {
+          // Invalid folderId
+          return null;
+        }
         if (!await hasPermissions(folderPath, request.name, P.WRITE)) {
           // We should either fail or prompt.
           console.log("No permission to write file", request.name)
           return null;
         }
-        return null;
-        //return browser.FSA.writeFile(folderPath, request.file);
+        return browser.FSA.writeFile(folderPath, request.name, request.file);
       }
 
     default:

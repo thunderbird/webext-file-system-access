@@ -16,14 +16,24 @@
   const lazy = {}
   XPCOMUtils.defineLazyGlobalGetters(lazy, ["File", "FileReader"]);
 
-  async function picker({ displayDirectory, mode, title }) {
+  async function picker({ displayPath, mode, title }) {
     const task = Promise.withResolvers();
     const fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
     const win = Services.wm.getMostRecentWindow(null);
     fp.init(win.browsingContext, title, mode);
-    if (displayDirectory) {
-      fp.displayDirectory = displayDirectory;
+
+    if (displayPath) {
+      let displayDirectory = Cc["@mozilla.org/file/local;1"].createInstance(
+        Ci.nsIFile
+      );
+      try {
+        displayDirectory.initWithPath(displayPath);
+        fp.displayDirectory = displayDirectory;
+      } catch {
+        // Failed. Move on.
+      }
     }
+
     // TODO: Filters (file types)
     fp.open(async rv => {
       if (rv == Ci.nsIFilePicker.returnCancel) {
@@ -109,17 +119,26 @@
           async readFilesPicker(options) {
             return picker({ ...options, mode: Ci.nsIFilePicker.modeOpenMultiple, title: "<Add-on name>: Select files" })
           },
-          async saveFilePicker(options) {
-            const buffer = await options.file.arrayBuffer();
+          async saveFilePicker(file, options) {
+            const buffer = await file.arrayBuffer();
             let rv = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave, title: "<Add-on name>: Save file" })
             await IOUtils.write(rv.file.path, new Uint8Array(buffer));
             return rv;
           },
           async readFile(folderPath, fileName) {
-            console.log("todo: read", folderPath, fileName)
+            const path = PathUtils.join(folderPath, fileName);
+            // Even though IOUtils is the new shiny thing to use, it does not
+            // return the type. So we keep using an nsIFile.
+            let file = Cc["@mozilla.org/file/local;1"].createInstance(
+              Ci.nsIFile
+            );
+            file.initWithPath(path);
+            return lazy.File.createFromNsIFile(file);
           },
           async writeFile(folderPath, fileName, file) {
-            console.log("todo: save", folderPath, fileName, file)
+            const path = PathUtils.join(folderPath, fileName);
+            const buffer = await file.arrayBuffer();
+            await IOUtils.write(path, new Uint8Array(buffer));
           },
         },
       };

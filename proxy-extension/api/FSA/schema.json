@@ -1,6 +1,12 @@
 [
   {
     "namespace": "FSA",
+    "types": [
+      {
+        "id": "PickerOptions",
+        "type": "any" // TODO: specify the actual props
+      }
+    ],
     "functions": [
       {
         "name": "newUID",
@@ -15,7 +21,7 @@
         "parameters": [
           {
             "name": "options",
-            "type": "any", // TODO: specify the actual props
+            "$ref": "PickerOptions",
             "optional": true
           }
         ]
@@ -27,7 +33,7 @@
         "parameters": [
           {
             "name": "options",
-            "type": "any", // TODO: specify the actual props
+            "$ref": "PickerOptions",
             "optional": true
           }
         ]
@@ -39,7 +45,7 @@
         "parameters": [
           {
             "name": "options",
-            "type": "any", // TODO: specify the actual props
+            "$ref": "PickerOptions",
             "optional": true
           }
         ]
@@ -50,8 +56,14 @@
         "async": true,
         "parameters": [
           {
+            "name": "file",
+            "type": "object",
+            "isInstanceOf": "File",
+            "additionalProperties": true
+          },
+          {
             "name": "options",
-            "type": "any", // TODO: specify the actual props
+            "$ref": "PickerOptions",
             "optional": true
           }
         ]

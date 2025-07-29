@@ -1,47 +1,10 @@
+import * as indexedDB from './modules/indexdb.mjs'
+
 "use strict";
 
 const P = {
   READ: 0x1 << 0,
   WRITE: 0x1 << 1,
-}
-
-let { gPermissions, gFolders } = await browser.storage.local.get({
-  gPermissions: new Map(),
-  gFolders: new Map()
-})
-
-async function updateStorage() {
-  await browser.storage.local.set({ gPermissions, gFolders });
-}
-
-async function updateFolderId(path) {
-  let folderId = gFolders.get(path);
-  if (!folderId) {
-    folderId = await browser.FSA.newUID();
-  }
-  gFolders.set(path, folderId);
-  return folderId;
-}
-
-async function getFolderPath(folderId) {
-  const keys = [];
-  for (const [key, value] of gFolders.entries()) {
-    if (value === folderId) {
-      return key;
-    }
-  }
-  return null;
-}
-async function updatePermissions(folderPath, fileName, newPermissions) {
-  const key = JSON.stringify({ folderPath, fileName });
-  let curPermissions = gPermissions.get(key) ?? 0;
-  gPermissions.set(key, curPermissions | newPermissions);
-}
-
-async function hasPermissions(folderPath, fileName, reqPermissions) {
-  const key = JSON.stringify({ folderPath, fileName });
-  let curPermissions = gPermissions.get(key) ?? 0;
-  return curPermissions & reqPermissions;
 }
 
 browser.runtime.onMessageExternal.addListener(async (request, sender) => {
@@ -53,14 +16,17 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
       }
     case "readFilePicker":
       {
-        let displayPath = await getFolderPath(request.folderId);
+        let displayPath = await indexedDB.getFolderPath(request.folderId);
         let picker = await browser.FSA.readFilePicker({ displayPath });
-        let folderId = await updateFolderId(picker.folder.path);
+        let folderId = await indexedDB.getFolderId(picker.folder.path);
         // The user selected the file and thus gave permission to re-read the same
         // file at a later time (without using the file picker).
         // Note #1: Single one-time read via a file picker does not need the FSA add-on.
-        await updatePermissions(picker.folder.path, picker.file.name, P.READ);
-        await updateStorage();
+        await indexedDB.updatePermissions(P.READ, {
+          folderPath: picker.folder.path,
+          fileName: picker.file.name,
+          extensionId: sender.id
+        });
         return {
           file: picker.file,
           folderId,
@@ -69,13 +35,16 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
 
     case "readFilesPicker":
       {
-        let displayPath = await getFolderPath(request.folderId);
+        let displayPath = await indexedDB.getFolderPath(request.folderId);
         let picker = await browser.FSA.readFilesPicker({ displayPath });
-        let folderId = await updateFolderId(picker.folder.path);
+        let folderId = await indexedDB.getFolderId(picker.folder.path);
         for (let file of picker.files) {
-          updatePermissions(picker.folder.path, file.name, P.READ);
+          await indexedDB.updatePermissions(P.READ, {
+            folderPath: picker.folder.path,
+            fileName: file.name,
+            extensionId: sender.id
+          });
         }
-        await updateStorage();
         return {
           files: picker.files,
           folderId,
@@ -84,11 +53,10 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
 
     case "readFolderPicker":
       {
-        let displayPath = await getFolderPath(request.folderId);
+        let displayPath = await indexedDB.getFolderPath(request.folderId);
         let picker = await browser.FSA.readFolderPicker({ displayPath });
-        let folderId = await updateFolderId(picker.folder.path);
+        let folderId = await indexedDB.getFolderId(picker.folder.path);
         // Permissions: TODO
-        await updateStorage();
         return {
           folderId
         };
@@ -96,15 +64,16 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
 
     case "saveFilePicker":
       {
-        let displayPath = await getFolderPath(request.folderId);
+        let displayPath = await indexedDB.getFolderPath(request.folderId);
         let picker = await browser.FSA.saveFilePicker(request.file, { displayPath });
-        let folderId = await updateFolderId(picker.folder.path);
-        await updatePermissions(picker.folder.path, picker.file.name, P.READ | P.WRITE);
-        await updateStorage();
+        let folderId = await indexedDB.getFolderId(picker.folder.path);
+        await indexedDB.updatePermissions(P.READ | P.WRITE, {
+          folderPath: picker.folder.path,
+          fileName: picker.file.name,
+          extensionId: sender.id
+        });
         return {
-          file: {
-            name: picker.file.name
-          },
+          fileName: picker.file.name,
           folderId,
         };
       }
@@ -112,12 +81,16 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
     case "readFile":
       {
         // Do we have permissions?
-        let folderPath = await getFolderPath(request.folderId);
+        let folderPath = await indexedDB.getFolderPath(request.folderId);
         if (!folderPath) {
           // Invalid folderId
           return null;
         }
-        if (!await hasPermissions(folderPath, request.name, P.READ)) {
+        if (!await indexedDB.hasPermissions(P.READ, {
+          folderPath,
+          fileName: request.name,
+          extensionId: sender.id
+        })) {
           // We should either fail or prompt.
           console.log("No permission to read file", request.name)
           return null;
@@ -128,12 +101,16 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
     case "writeFile":
       {
         // Do we have permissions?
-        let folderPath = await getFolderPath(request.folderId);
+        let folderPath = await indexedDB.getFolderPath(request.folderId);
         if (!folderPath) {
           // Invalid folderId
           return null;
         }
-        if (!await hasPermissions(folderPath, request.name, P.WRITE)) {
+        if (!await indexedDB.hasPermissions(P.WRITE, {
+          folderPath,
+          fileName: request.name,
+          extensionId: sender.id
+        })) {
           // We should either fail or prompt.
           console.log("No permission to write file", request.name)
           return null;

@@ -25,32 +25,34 @@ if (fsaAvailable) {
     //let multipleFiles = await fsa({ command: "readFilesPicker", folderId: singleFile.folderId });
     //let folder = await fsa({ command: "readFolderPicker", folderId: singleFile.folderId });
 
-    //let savedFile = await fsa({
-    //    command: "saveFilePicker",
-    //    file: new File(['1234567890'], 'text.txt', { type: 'plain/text' }),
-    //    folderId: singleFile.folderId
-    //});
+    // Should open the folder of the single file selection picker.
+    let savedFile = await fsa({
+        command: "saveFilePicker",
+        file: new File(['1234567890'], 'text.txt', { type: 'plain/text' }),
+        folderId: singleFile.folderId
+    });
+    console.log(savedFile);
 
-    let reReadFile1 = await fsa({
+    let reReadSavedFile = await fsa({
         command: "readFile",
-        folderId: singleFile.folderId,
-        name: singleFile.file.name
+        folderId: savedFile.folderId,
+        name: savedFile.fileName
     })
-    console.log(await reReadFile1.text());
+    console.log(await reReadSavedFile.text());
 
     await fsa({
         command: "writeFile",
-        folderId: singleFile.folderId,
-        name: singleFile.file.name,
+        folderId: savedFile.folderId,
+        name: savedFile.fileName,
         file: new File(["Test 2"], "test.dat")
     })
 
-    let reReadFile2 = await fsa({
+    let reReadSavedFile2 = await fsa({
         command: "readFile",
-        folderId: singleFile.folderId,
-        name: singleFile.file.name
+        folderId: savedFile.folderId,
+        name: savedFile.fileName
     })
-    console.log(await reReadFile2.text());
+    console.log(await reReadSavedFile2.text());
 
     // This should fail.
     await fsa({

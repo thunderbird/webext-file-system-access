@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "File System Access Example",
+  "description": "An example add-on which uses the file system access",
+  "version": "1",
+  "author": "Thunderbird Team",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "file-system-access-example@addons.thunderbird.net",
+      "strict_min_version": "128.0"
+    }
+  },
+  "background": {
+    "type": "module",
+    "scripts": [
+      "background-example.js"
+    ]
+  },
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "16": "assets/documentation16.png",
+    "24": "assets/documentation24.png",
+    "32": "assets/documentation32.png",
+    "64": "assets/documentation64.png"
+  }
+}

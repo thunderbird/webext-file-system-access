@@ -1,0 +1,97 @@
+[
+  {
+    "namespace": "FSA",
+    "functions": [
+      {
+        "name": "newUID",
+        "type": "function",
+        "async": true,
+        "parameters": []
+      },
+      {
+        "name": "readFolderPicker",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "options",
+            "type": "any", // TODO: specify the actual props
+            "optional": true
+          }
+        ]
+      },
+      {
+        "name": "readFilePicker",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "options",
+            "type": "any", // TODO: specify the actual props
+            "optional": true
+          }
+        ]
+      },
+      {
+        "name": "readFilesPicker",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "options",
+            "type": "any", // TODO: specify the actual props
+            "optional": true
+          }
+        ]
+      },
+      {
+        "name": "saveFilePicker",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "options",
+            "type": "any", // TODO: specify the actual props
+            "optional": true
+          }
+        ]
+      },
+      {
+        "name": "readFile",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "path",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "name": "writeFile",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "path",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "file",
+            "type": "object",
+            "isInstanceOf": "File",
+            "additionalProperties": true
+          }
+        ]
+      }
+    ]
+  }
+]

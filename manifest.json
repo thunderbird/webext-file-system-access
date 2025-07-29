@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "File System Access",
+  "description": "A proxy extension to provide file system access",
+  "version": "1.2",
+  "author": "Thunderbird Team",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "file-system-access@addons.thunderbird.net",
+      "strict_min_version": "128.0"
+    }
+  },
+  "background": {
+    "type": "module",
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "16": "assets/icon16.png",
+    "24": "assets/icon24.png",
+    "32": "assets/icon32.png",
+    "64": "assets/icon64.png"
+  },
+  "experiment_apis": {
+    "FSA": {
+      "schema": "api/FSA/schema.json",
+      "parent": {
+        "scopes": [
+          "addon_parent"
+        ],
+        "paths": [
+          [
+            "FSA"
+          ]
+        ],
+        "script": "api/FSA/implementation.js"
+      }
+    }
+  }  
+}

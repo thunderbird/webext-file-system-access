@@ -1,6 +1,6 @@
 import * as fsa from './modules/fsa.mjs'
 
-async function test() {
+browser.action.onClicked.addListener(async () => {
     // Check if the FSA proxy is available and bail out if not.
     let fsaAvailable = false;
     try {
@@ -13,6 +13,48 @@ async function test() {
         return;
     }
 
+    // Read a file using a file picker, request persistent read access.
+    let singleFile = await fsa.readFileWithPicker(
+        {
+            requestRead: true,
+            requestWrite: false
+        },
+        {
+        }
+    );
+    if (!singleFile) return;
+    console.log({
+        singleFile,
+        fileName: singleFile.file.name,
+        folderId: singleFile.folderId,
+        content: await singleFile.file.text()
+    });
+
+    // Re-read the just saved file, using the granted read permission.
+    let reReadSavedFile = await fsa.readFile(
+        singleFile.folderId,
+        singleFile.file.name
+    )
+    console.log({
+        reReadSavedFile,
+        fileName: reReadSavedFile.file.name,
+        folderId: reReadSavedFile.folderId,
+        content: await reReadSavedFile.file.text()
+    });
+})
+
+async function test() {
+    // Check if the FSA proxy is available and bail out if not.
+    let fsaAvailable = false;
+    try {
+        await fsa.getVersion();
+        fsaAvailable = true;
+    } catch {
+        // fsa not available
+    }
+    if (!fsaAvailable) {
+        return;
+    }
 
     // Test 1: Read a file using a file picker.
     let singleFile = await fsa.readFileWithPicker(
@@ -36,7 +78,7 @@ async function test() {
     // Test 2: Write a file using a file picker. Should open the folder used in
     // the previous single file selection picker.
     let savedFile = await fsa.writeFileWithPicker(
-        new Blob(['1234567890']), 
+        new Blob(['1234567890']),
         {
             requestRead: true,
             requestWrite: true,
@@ -102,4 +144,4 @@ async function test() {
     )
 }
 
-await test();
+// test()

@@ -12,18 +12,18 @@ const P = {
 
 async function requestPersistentAccess(
   nativeFilePath,
-  { requestRead, requestWrite },
+  { read, write },
   { fileName, folderPath, extensionId }
 ) {
   let info = await browser.management.get(extensionId);
 
   let permissions = 0
   let labels = [];
-  if (requestRead) {
+  if (read) {
     permissions |= P.READ;
     labels.push(browser.i18n.getMessage("permission.read.label"))
   }
-  if (requestWrite) {
+  if (write) {
     permissions |= P.WRITE;
     labels.push(browser.i18n.getMessage("permission.write.label"))
   }
@@ -186,11 +186,15 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
           error: `Invalid folderId <${request.folderId}>`
         }
       }
-      return await indexedDB.getPermissions({
+      let rv = await indexedDB.getPermissions({
         folderPath,
         fileName: request.fileName,
         extensionId: sender.id
       })
+      return {
+        read: !!(rv & P.READ),
+        write: !!(rv & P.WRITE)
+      }
     }
 
     default:

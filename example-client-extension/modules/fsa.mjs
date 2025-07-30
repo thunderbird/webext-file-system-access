@@ -21,7 +21,7 @@ export function getVersion() {
 }
 
 export function readFileWithPicker(
-    { requestRead, requestWrite },
+    { read, write },
     { filters, defaultName, defaultFolderId }
 ) {
     return fsaRequest({
@@ -29,14 +29,14 @@ export function readFileWithPicker(
         filters,
         defaultName,
         defaultFolderId,
-        requestRead,
-        requestWrite,
+        read,
+        write,
     })
 };
 
 export function writeFileWithPicker(
     file,
-    { requestRead, requestWrite },
+    { read, write },
     { filters, defaultName, defaultFolderId }
 ) {
     return fsaRequest({
@@ -45,8 +45,8 @@ export function writeFileWithPicker(
         filters,
         defaultName,
         defaultFolderId,
-        requestRead,
-        requestWrite,
+        read,
+        write,
     });
 }
 

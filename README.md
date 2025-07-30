@@ -17,11 +17,14 @@ Add-on developers can include the [`fsa.mjs`](https://github.com/thunderbird/web
   Returns the version number of the file-system-access proxy add-on. Fails if the add-on is not installed.  
   _Use this to check whether the proxy is available and notify the user that it is needed for a specific functionality._
 
-- `readFileWithPicker(FsaFilePermissions, FsaPickerOptions)`  
-  Opens a file picker dialog and returns an `FsaFile` object for the selected file. If the permissions specified in the `FsaFilePermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
+- `readFileWithPicker(FsaPermissions, FsaPickerOptions)`  
+  Opens a file picker dialog and returns an `FsaFile` object for the selected file. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
 
-- `writeFileWithPicker(Blob, FsaFilePermissions, FsaPickerOptions)`  
-  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns an `FsaFile` object. If the permissions specified in the `FsaFilePermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
+- `writeFileWithPicker(Blob, FsaPermissions, FsaPickerOptions)`  
+  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns an `FsaFile` object. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
+
+- `getPermissions(folderId, fileName)`  
+  Returns a `FsaPermissions` object with the current permissions for the specified item.
 
 - `readFile(folderId, fileName)`  
   Attempts to read the specified file. Fails if the user has not granted `read` permission. Returns an `FsaFile` object.
@@ -29,15 +32,15 @@ Add-on developers can include the [`fsa.mjs`](https://github.com/thunderbird/web
 - `writeFile(Blob, folderId, fileName)`  
   Attempts to write the provided data to the specified file. Fails if the user has not granted `write` permission. Returns an `FsaFile` object.
 
-### **FsaFilePermissions (Object)**
+### **FsaPermissions (Object)**
 
-Optional properties to request persistent file access to the picked files:
+Properties:
 
-- `requestRead`  
-  A boolean value to request persistent read access to the picked file.
+- `read`  
+  A boolean value representing read access.
 
-- `requestWrite`  
-  A boolean value to request persistent write access to the picked file.
+- `write`  
+  A boolean value representing write access
 
 ### **FsaPickerOptions (Object)**
 

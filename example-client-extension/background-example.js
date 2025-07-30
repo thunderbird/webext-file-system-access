@@ -16,8 +16,8 @@ browser.action.onClicked.addListener(async () => {
     // Read a file using a file picker, request persistent read access.
     let singleFile = await fsa.readFileWithPicker(
         {
-            requestRead: true,
-            requestWrite: false
+            read: true,
+            write: false
         },
         {
         }
@@ -66,8 +66,8 @@ async function test() {
     // Test 1: Read a file using a file picker.
     let singleFile = await fsa.readFileWithPicker(
         {
-            requestRead: true,
-            requestWrite: false
+            read: true,
+            write: false
         },
         {
             filters: [{ name: "JSON", ext: "*.json" }],
@@ -87,8 +87,8 @@ async function test() {
     let savedFile = await fsa.writeFileWithPicker(
         new Blob(['1234567890']),
         {
-            requestRead: true,
-            requestWrite: true,
+            read: true,
+            write: true,
         },
         {
             filters: [{ type: "text" }],

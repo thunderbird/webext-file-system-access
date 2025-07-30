@@ -2,7 +2,7 @@
 
 This add-on acts as a **proxy** for other Thunderbird add-ons to access the user's file system. It provides the following benefits:
 
-- **Maintenance**: Managed by the Thunderbird Team — no need for other add-ons to ship and maintain their own custom Experiments for File System Access.
+- **Maintenance**: Managed by the Thunderbird Team — no need for other add-ons to ship and maintain their own custom Experiments for file system access.
 - **User Experience**: Add-ons using the proxy for file system access do not need to be updated for every major Thunderbird release (as long as they do not use other Experiment APIs). This improves user experience by preventing add-ons from being disabled due to missing updates.
 - **Transparency**: Users can clearly see which add-ons are accessing which files, and can update or revoke access at any time.
 - **Privacy**: The proxy add-on never exposes the full folder structure; instead, it returns opaque `folderId` values that can be used for later access.

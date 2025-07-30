@@ -32,5 +32,11 @@
                 "content": "$1"
             }
         }
+    },
+    "options.grantedPermissions.header": {
+        "message": "Manage File Access Permissions"
+    },
+    "options.grantedPermissions.description": {
+        "message": "The following list shows all currently granted persistent file access permissions, sorted by add-ons. Each permission can be revoked or updated."
     }
 }

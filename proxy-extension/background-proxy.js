@@ -7,6 +7,9 @@ const P = {
   WRITE: 0x1 << 1,
 }
 
+// TODO:
+// * Add access to activity log?
+
 async function requestPersistentAccess(
   nativeFilePath,
   { requestRead, requestWrite },
@@ -185,3 +188,6 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
       return { error: "Invalid command" }
   }
 })
+
+// Revoke permissions for removed extensions.
+browser.management.onUninstalled.addListener(info => indexedDB.removePermissionsForExtension(info.id));

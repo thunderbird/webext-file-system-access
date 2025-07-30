@@ -19,6 +19,10 @@ export function openDB() {
             if (!permissionsStore.indexNames.contains("permissionIndex")) {
                 permissionsStore.createIndex("permissionIndex", ["extensionId", "folderPath", "fileName"], { unique: true });
             }
+            // Create an index for extensionIds
+            if (!permissionsStore.indexNames.contains("extensionIdIndex")) {
+                permissionsStore.createIndex("extensionIdIndex", "extensionId", { unique: false });
+            }
 
             // Create folders object store.
             let foldersStore;
@@ -28,23 +32,37 @@ export function openDB() {
                 foldersStore = event.target.transaction.objectStore("folders");
             }
             // Create an index to lookup paths, enforce unique paths.
-            if (!permissionsStore.indexNames.contains("pathIndex")) {
+            if (!foldersStore.indexNames.contains("pathIndex")) {
                 foldersStore.createIndex("pathIndex", "folderPath", { unique: true });
             }
         };
     });
 }
 
-export async function addItem(item, storeName) {
+/**
+ * Retrieve all permission records, sorted by extensionId using an index.
+ *
+ * @returns {Promise<Array>} A promise that resolves to a sorted array of permission records.
+ */
+export async function getAllPermissionsSorted() {
     const { promise, resolve, reject } = Promise.withResolvers();
 
     const db = await openDB();
-    const tx = db.transaction(storeName, "readwrite");
-    const store = tx.objectStore(storeName);
-    const request = store.add(item);
-    tx.oncomplete = () => resolve(request.result);
+    const tx = db.transaction("permissions", "readonly");
+    const store = tx.objectStore("permissions");
+    const index = store.index("extensionIdIndex");
+
+    const getReq = index.getAll();
+
+    let result = null;
+    getReq.onsuccess = () => {
+        result = getReq.result || []
+    };
+
+    tx.oncomplete = () => resolve(result);
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
+
     return promise;
 }
 
@@ -100,7 +118,6 @@ export async function updatePermissions(newPermission, item) {
     const getReq = index.get(key);
 
     let savedRecord;
-
     getReq.onsuccess = () => {
         const record = getReq.result;
 
@@ -119,7 +136,7 @@ export async function updatePermissions(newPermission, item) {
             };
             const addReq = store.add(newRecord);
             addReq.onsuccess = () => {
-                // Capture generated id (even though we do not use it).
+                // Capture generated id.
                 newRecord.id = addReq.result;
                 savedRecord = newRecord;
             };
@@ -132,6 +149,74 @@ export async function updatePermissions(newPermission, item) {
 
     return promise;
 }
+
+/**
+ * Remove the granted permission for the given item.
+ *
+ * @param {Object} item - An object that has extensionId, folderPath, fileName.
+ */
+export async function removePermissions(item) {
+    const { promise, resolve, reject } = Promise.withResolvers();
+
+    const db = await openDB();
+    const tx = db.transaction("permissions", "readwrite");
+    const store = tx.objectStore("permissions");
+    const index = store.index("permissionIndex");
+
+    const key = [item.extensionId, item.folderPath, item.fileName];
+    const getReq = index.get(key);
+
+    getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (record) {
+            store.delete(record.id);
+        }
+    };
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+
+    return promise;
+}
+
+export async function removePermissionsForExtension(extensionId) {
+    const { promise, resolve, reject } = Promise.withResolvers();
+
+    const db = await openDB();
+    const tx = db.transaction("permissions", "readwrite");
+    const store = tx.objectStore("permissions");
+    const index = store.index("extensionIdIndex");
+
+    const request = index.openCursor(IDBKeyRange.only(extensionId));
+
+    request.onsuccess = () => {
+        const cursor = request.result;
+        if (cursor) {
+            cursor.delete();
+            cursor.continue();
+        }
+    };
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+
+    return promise;
+}
+
+// export async function addItem(item, storeName) {
+//     const { promise, resolve, reject } = Promise.withResolvers();
+
+//     const db = await openDB();
+//     const tx = db.transaction(storeName, "readwrite");
+//     const store = tx.objectStore(storeName);
+//     const request = store.add(item);
+//     tx.oncomplete = () => resolve(request.result);
+//     tx.onerror = () => reject(tx.error);
+//     tx.onabort = () => reject(tx.error);
+//     return promise;
+// }
 
 /**
  * Lookup a folderId by its folderPath.
@@ -163,15 +248,10 @@ export async function getFolderId(folderPath) {
                 folderId: crypto.randomUUID(),
                 folderPath
             };
-            const addReq = store.add(item);
-            addReq.onsuccess = () => {
-                folderId = item.folderId;
-            };
-            addReq.onerror = () => reject(addReq.error);
+            store.add(item);
+            folderId = item.folderId;
         }
     };
-
-    getReq.onerror = () => reject(getReq.error);
 
     tx.oncomplete = () => resolve(folderId);
     tx.onerror = () => reject(tx.error);
@@ -206,8 +286,6 @@ export async function getFolderPath(folderId) {
             folderPath = result.folderPath;
         }
     };
-
-    request.onerror = () => reject(request.error);
 
     tx.oncomplete = () => resolve(folderPath);
     tx.onerror = () => reject(tx.error);

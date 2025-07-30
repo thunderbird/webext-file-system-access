@@ -1,4 +1,4 @@
-# **File System Access Proxy Add-on**
+# **File Access Manager for Add-ons**
 
 This add-on acts as a **proxy** for other Thunderbird add-ons to access the user's file system. It provides the following benefits:
 

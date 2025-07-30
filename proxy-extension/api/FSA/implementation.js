@@ -28,11 +28,11 @@
   XPCOMUtils.defineLazyGlobalGetters(lazy, ["File", "FileReader"]);
 
   // Returns the selected native file object (nsIFile).
-  async function picker({ displayPath, mode, title, filters, defaultName }) {
+  async function picker({ displayPath, mode, filters, defaultName }) {
     const task = Promise.withResolvers();
     const fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
     const win = Services.wm.getMostRecentWindow(null);
-    fp.init(win.browsingContext, title, mode);
+    fp.init(win.browsingContext, null, mode);
 
     // Handle default folder.
     if (displayPath) {
@@ -119,13 +119,13 @@
             return Services.uuid.generateUUID().toString().substring(1, 37);
           },
           // async getFolderWithPicker(options) {
-          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeGetFolder, title: "<Add-on name>: Select folder" })
+          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeGetFolder })
           // },
           // async readFilesWithPicker(options) {
-          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeOpenMultiple, title: "<Add-on name>: Select files" })
+          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeOpenMultiple })
           // },
           async readFileWithPicker(options) {
-            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeOpen, title: "<Add-on name>: Select file" })
+            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeOpen })
             if (!nativePickedFile) {
               return {
                 error: "Canceled by user"
@@ -140,7 +140,7 @@
             }
           },
           async writeFileWithPicker(file, options) {
-            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave, title: "<Add-on name>: Save file" })
+            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave })
             if (!nativePickedFile) {
               return {
                 error: "Canceled by user"

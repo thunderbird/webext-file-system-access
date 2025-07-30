@@ -15,13 +15,13 @@ Add-on developers can include the [`fsa.mjs`](https://github.com/thunderbird/web
 
 - `getVersion()`  
   Returns the version number of the file-system-access proxy add-on. Fails if the add-on is not installed.  
-  _Use this to check whether the proxy is available and notify the user that it is needed for a specifc functionality._
+  _Use this to check whether the proxy is available and notify the user that it is needed for a specific functionality._
 
-- `readFileWithPicker(FsaPickerOptions)`  
-  Opens a file picker dialog and returns a `FsaFile` object for the selected file.
+- `readFileWithPicker(FsaFilePermissions, FsaPickerOptions)`  
+  Opens a file picker dialog and returns a `FsaFile` object for the selected file. If the permissions specified in the `FsaFilePermission` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
 
-- `writeFileWithPicker(Blob, FsaPickerOptions)`  
-  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns a `FsaFile` object.
+- `writeFileWithPicker(Blob, FsaFilePermissions, FsaPickerOptions)`  
+  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns a `FsaFile` object. If the permissions specified in the `FsaFilePermission` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
 
 - `readFile(folderId, fileName)`  
   Attempts to read the specified file. Fails if the user has not granted `read` permission. Returns a `FsaFile` object.
@@ -29,9 +29,19 @@ Add-on developers can include the [`fsa.mjs`](https://github.com/thunderbird/web
 - `writeFile(Blob, folderId, fileName)`  
   Attempts to write the provided data to the specified file. Fails if the user has not granted `write` permission. Returns a `FsaFile` object.
 
+### **FsaFilePermissions (Object)**
+
+Optional properties to request persistent file access to the picked files:
+
+- `requestRead`  
+  A boolean value to request persistent read access. If persistent read access was not yet granted, the user is prompted after the file picker closed.
+
+- `requestWrite`  
+  A boolean value to request persistent write access. If persistent write access was not yet granted, the user is prompted after the file picker closed.
+
 ### **FsaPickerOptions (Object)**
 
-Optional properties:
+Optional properties to customize the file picker:
 
 - `filters`  
   An array of filter entries. Each entry can be either:
@@ -45,7 +55,6 @@ Optional properties:
 
 - `defaultFileName`  
   A default file name to suggest in the picker dialog.
-
 
 ### **FsaFile (Object)**
 

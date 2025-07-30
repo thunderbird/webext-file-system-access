@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "File System Access",
-  "description": "A proxy extension to provide file system access",
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
   "version": "1.2",
   "author": "Thunderbird Team",
   "browser_specific_settings": {
@@ -20,6 +20,7 @@
     "storage",
     "management"
   ],
+  "default_locale": "en-US",
   "icons": {
     "16": "assets/icon16.png",
     "24": "assets/icon24.png",
@@ -41,5 +42,5 @@
         "script": "api/FSA/implementation.js"
       }
     }
-  }  
+  }
 }

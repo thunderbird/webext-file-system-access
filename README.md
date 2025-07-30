@@ -18,16 +18,16 @@ Add-on developers can include the [`fsa.mjs`](https://github.com/thunderbird/web
   _Use this to check whether the proxy is available and notify the user that it is needed for a specific functionality._
 
 - `readFileWithPicker(FsaFilePermissions, FsaPickerOptions)`  
-  Opens a file picker dialog and returns a `FsaFile` object for the selected file. If the permissions specified in the `FsaFilePermission` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
+  Opens a file picker dialog and returns an `FsaFile` object for the selected file. If the permissions specified in the `FsaFilePermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
 
 - `writeFileWithPicker(Blob, FsaFilePermissions, FsaPickerOptions)`  
-  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns a `FsaFile` object. If the permissions specified in the `FsaFilePermission` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
+  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns an `FsaFile` object. If the permissions specified in the `FsaFilePermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
 
 - `readFile(folderId, fileName)`  
-  Attempts to read the specified file. Fails if the user has not granted `read` permission. Returns a `FsaFile` object.
+  Attempts to read the specified file. Fails if the user has not granted `read` permission. Returns an `FsaFile` object.
 
 - `writeFile(Blob, folderId, fileName)`  
-  Attempts to write the provided data to the specified file. Fails if the user has not granted `write` permission. Returns a `FsaFile` object.
+  Attempts to write the provided data to the specified file. Fails if the user has not granted `write` permission. Returns an `FsaFile` object.
 
 ### **FsaFilePermissions (Object)**
 

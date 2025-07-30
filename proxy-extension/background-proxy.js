@@ -13,30 +13,33 @@ async function requestPersistentAccess(
   { fileName, folderPath, extensionId }
 ) {
   let info = await browser.management.get(extensionId);
-  
+
   let permissions = 0
   let labels = [];
   if (requestRead) {
     permissions |= P.READ;
-    labels.push("READ")
+    labels.push(browser.i18n.getMessage("permission.read.label"))
   }
   if (requestWrite) {
     permissions |= P.WRITE;
-    labels.push("WRITE")
+    labels.push(browser.i18n.getMessage("permission.write.label"))
   }
 
   if (
     permissions &&
     !await indexedDB.hasPermissions(permissions, { fileName, folderPath, extensionId })
   ) {
-    const title = "Extension Requesting File System Access";
+    const title = browser.i18n.getMessage("permission.prompt.title");
     const message = [
-      `The extension "${info.name}" is requesting persistent ${labels.join(" and ")} access to the following file:`,
+      browser.i18n.getMessage("permission.prompt.line1", [
+        info.name, labels.join("/")
+      ]),
       ``,
       `  ${nativeFilePath}`,
       ``,
-      `Do you want to allow this?`,
-      `The persistent access will remain in effect until you revoke it manually in the options of the "File System Access" add-on.`
+      browser.i18n.getMessage("permission.prompt.line2", [
+        browser.i18n.getMessage("extensionName")
+      ]),
     ].join("\n");
     let granted = await browser.FSA.confirm(title, message);
     if (granted) {

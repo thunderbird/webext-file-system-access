@@ -1,0 +1,36 @@
+{
+    "extensionName": {
+        "message": "File Access Manager for Add-ons"
+    },
+    "extensionDescription": {
+        "message": "A proxy extension that enables and manages file system access for other Thunderbird add-ons."
+    },
+    "permission.read.label": {
+        "message": "READ"
+    },
+    "permission.write.label": {
+        "message": "WRITE"
+    },
+    "permission.prompt.title": {
+        "message": "Extension Requesting File System Access"
+    },
+    "permission.prompt.line1": {
+        "message": "The extension \"$NAME$\" is requesting persistent $PERMISSIONS$ access to the following file:",
+        "placeholders": {
+            "name": {
+                "content": "$1"
+            },
+            "permissions": {
+                "content": "$2"
+            }
+        }
+    },
+    "permission.prompt.line2": {
+        "message": "Do you want to allow this? You can revoke the persistent access at any time in the \"$NAME$\" options",
+        "placeholders": {
+            "name": {
+                "content": "$1"
+            }
+        }
+    }
+}

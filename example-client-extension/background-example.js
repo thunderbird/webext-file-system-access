@@ -1,19 +1,10 @@
-// ID of the proxy fsa add-on.
-const FSA_ID = "file-system-access@addons.thunderbird.net";
-
-async function fsa(request) {
-    try {
-        return await browser.runtime.sendMessage(FSA_ID, request);
-    } catch (ex) {
-        console.error(`Failed to send file system access request`, ex)
-    }
-    return null;
-}
+import * as fsa from './modules/fsa.mjs'
 
 async function test() {
+    // Check if the FSA proxy is available and bail out if not.
     let fsaAvailable = false;
     try {
-        await fsa({ command: "getVersion" });
+        await fsa.getVersion();
         fsaAvailable = true;
     } catch {
         // fsa not available
@@ -22,54 +13,80 @@ async function test() {
         return;
     }
 
-    let singleFile = await fsa({
-        command: "readFilePicker",
+
+    // Test 1: Read a file using a file picker.
+    let singleFile = await fsa.readFileWithPicker({
         filters: [{ name: "JSON", ext: "*.json" }],
-
     });
-    console.log({ singleFile });
     if (!singleFile) return;
-    //let multipleFiles = await fsa({ command: "readFilesPicker", folderId: singleFile.folderId });
-    //let folder = await fsa({ command: "readFolderPicker", folderId: singleFile.folderId });
-
-    // Should open the folder used in the previous single file selection picker.
-    let savedFile = await fsa({
-        command: "saveFilePicker",
-        file: new File(['1234567890'], 'text.txt', { type: 'plain/text' }),
+    console.log({
+        singleFile,
+        fileName: singleFile.file.name,
         folderId: singleFile.folderId,
-        filters: [{ type: "text" }],
-        defaultName: "juhu.json"
+        content: await singleFile.file.text()
     });
-    console.log({ savedFile });
+
+
+    // Test 2: Write a file using a file picker. Should open the folder used in
+    // the previous single file selection picker.
+    let savedFile = await fsa.writeFileWithPicker(new Blob(['1234567890']), {
+        filters: [{ type: "text" }],
+        defaultName: "juhu.json",
+        defaultFolderId: singleFile.folderId,
+    });
     if (!savedFile) return;
-
-    let reReadSavedFile = await fsa({
-        command: "readFile",
+    console.log({
+        savedFile,
+        fileName: savedFile.file.name,
         folderId: savedFile.folderId,
-        name: savedFile.fileName
-    })
-    console.log(await reReadSavedFile.text());
+        content: await savedFile.file.text()
+    });
 
-    await fsa({
-        command: "writeFile",
-        folderId: savedFile.folderId,
-        name: savedFile.fileName,
-        file: new File(["Test 2"], "test.dat")
-    })
+    // Test 3: Re-read the just saved file, using the granted read permission.
+    let reReadSavedFile = await fsa.readFile(
+        savedFile.folderId,
+        savedFile.file.name
+    )
+    console.log({
+        reReadSavedFile,
+        fileName: reReadSavedFile.file.name,
+        folderId: reReadSavedFile.folderId,
+        content: await reReadSavedFile.file.text()
+    });
 
-    let reReadSavedFile2 = await fsa({
-        command: "readFile",
-        folderId: savedFile.folderId,
-        name: savedFile.fileName
-    })
-    console.log(await reReadSavedFile2.text());
+    // Test 4: Write a custom BLOB into the just saved file, using the granted
+    // write permission.
+    let reSavedFile = await fsa.writeFile(
+        new Blob(["Test 2"]),
+        savedFile.folderId,
+        savedFile.file.name,
+    );
+    console.log({
+        reSavedFile,
+        fileName: reSavedFile.file.name,
+        folderId: reSavedFile.folderId,
+        content: await reSavedFile.file.text()
+    });
 
-    // This should fail.
-    await fsa({
-        command: "readFile",
-        folderId: singleFile.folderId,
-        name: "Something else.txt"
-    })
+    // Test 5: Re-read the just saved file with the custom BLOB content, using
+    // the granted read permission.
+    let reReadSavedFile2 = await fsa.readFile(
+        reSavedFile.folderId,
+        reSavedFile.file.name
+    );
+    console.log({
+        reReadSavedFile2,
+        fileName: reReadSavedFile2.file.name,
+        folderId: reReadSavedFile2.folderId,
+        content: await reReadSavedFile2.file.text()
+    });
+
+
+    // Test 6: Trying to read a file without permission. This should fail.
+    await fsa.readFile(
+        singleFile.folderId,
+        "Something else.txt"
+    )
 }
 
 await test();

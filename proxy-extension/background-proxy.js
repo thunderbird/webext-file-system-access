@@ -9,86 +9,86 @@ const P = {
 
 browser.runtime.onMessageExternal.addListener(async (request, sender) => {
   switch (request.command) {
-    case "getVersion":
-      {
-        const manifest = browser.runtime.getManifest();
-        return manifest.version;
-      }
-    case "readFilePicker":
-      {
-        let displayPath = await indexedDB.getFolderPath(request.folderId);
-        let picker = await browser.FSA.readFilePicker({
-          displayPath,
-          defaultName: request.defaultName,
-          filters: request.filters,
-        });
-        if (!picker) return null;
-        let folderId = await indexedDB.getFolderId(picker.folder.path);
-        // The user selected the file and thus gave permission to re-read the same
-        // file at a later time (without using the file picker).
-        // Note #1: Single one-time read via a file picker does not need the FSA add-on.
-        await indexedDB.updatePermissions(P.READ, {
-          folderPath: picker.folder.path,
-          fileName: picker.file.name,
-          extensionId: sender.id
-        });
-        return {
-          file: picker.file,
-          folderId,
-        };
-      }
+    case "getVersion": {
+      const manifest = browser.runtime.getManifest();
+      return manifest.version;
+    }
 
+    // case "readFilesWithPicker": {
+    //   let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+    //   let picker = await browser.FSA.readFilesWithPicker({
+    //     displayPath,
+    //     defaultName: request.defaultFileName,
+    //     filters: request.filters,
+    //   });
+    //   if (!picker) return null;
+    //   let folderId = await indexedDB.getFolderId(picker.folder.path);
+    //   for (let file of picker.files) {
+    //     await indexedDB.updatePermissions(P.READ, {
+    //       folderPath: picker.folder.path,
+    //       fileName: file.name,
+    //       extensionId: sender.id
+    //     });
+    //   }
+    //   return {
+    //     files: picker.files,
+    //     folderId,
+    //   };
+    // }
 
-    case "readFilesPicker":
+    // case "getFolderWithPicker": {
+    //   let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+    //   let picker = await browser.FSA.getFolderWithPicker({ displayPath });
+    //   if (!picker) return null;
+    //   let folderId = await indexedDB.getFolderId(picker.folder.path);
+    //   // Permissions: TODO
+    //   return {
+    //     folderId
+    //   };
+    // }
+
+    case "readFileWithPicker": {
+      let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+      let rv = await browser.FSA.readFileWithPicker({
+        displayPath,
+        defaultName: request.defaultFileName,
+        filters: request.filters,
+      });
+      if (rv.error) return rv;
+
+      let folderId = await indexedDB.getFolderId(rv.folder.path);
+      // The user selected the file and thus gave permission to re-read the same
+      // file at a later time (without using the file picker).
+      // Note #1: Single one-time read via a file picker does not need the FSA add-on.
+      await indexedDB.updatePermissions(P.READ, {
+        folderPath: rv.folder.path,
+        fileName: rv.file.name,
+        extensionId: sender.id
+      });
+      return {
+        file: rv.file,
+        folderId,
+      };
+    }
+
+    case "writeFileWithPicker":
       {
-        let displayPath = await indexedDB.getFolderPath(request.folderId);
-        let picker = await browser.FSA.readFilesPicker({
+        let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+        let rv = await browser.FSA.writeFileWithPicker(request.file, {
           displayPath,
-          defaultName: request.defaultName,
+          defaultName: request.defaultFileName,
           filters: request.filters,
         });
-        if (!picker) return null;
-        let folderId = await indexedDB.getFolderId(picker.folder.path);
-        for (let file of picker.files) {
-          await indexedDB.updatePermissions(P.READ, {
-            folderPath: picker.folder.path,
-            fileName: file.name,
-            extensionId: sender.id
-          });
-        }
-        return {
-          files: picker.files,
-          folderId,
-        };
-      }
-    case "readFolderPicker":
-      {
-        let displayPath = await indexedDB.getFolderPath(request.folderId);
-        let picker = await browser.FSA.readFolderPicker({ displayPath });
-        if (!picker) return null;
-        let folderId = await indexedDB.getFolderId(picker.folder.path);
-        // Permissions: TODO
-        return {
-          folderId
-        };
-      }
-    case "saveFilePicker":
-      {
-        let displayPath = await indexedDB.getFolderPath(request.folderId);
-        let picker = await browser.FSA.saveFilePicker(request.file, {
-          displayPath,
-          defaultName: request.defaultName,
-          filters: request.filters,
-        });
-        if (!picker) return null;
-        let folderId = await indexedDB.getFolderId(picker.folder.path);
+        if (rv.error) return rv;
+
+        let folderId = await indexedDB.getFolderId(rv.folder.path);
         await indexedDB.updatePermissions(P.READ | P.WRITE, {
-          folderPath: picker.folder.path,
-          fileName: picker.file.name,
+          folderPath: rv.folder.path,
+          fileName: rv.file.name,
           extensionId: sender.id
         });
         return {
-          fileName: picker.file.name,
+          file: rv.file,
           folderId,
         };
       }
@@ -98,19 +98,24 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
         // Do we have permissions?
         let folderPath = await indexedDB.getFolderPath(request.folderId);
         if (!folderPath) {
-          // Invalid folderId
-          return null;
+          return {
+            error: `Invalid folderId <${request.folderId}>`
+          }
         }
         if (!await indexedDB.hasPermissions(P.READ, {
           folderPath,
-          fileName: request.name,
+          fileName: request.fileName,
           extensionId: sender.id
         })) {
-          // We should either fail or prompt.
-          console.log("No permission to read file", request.name)
-          return null;
+          return {
+            error: `Missing READ permission for ${request.folderId} / ${request.fileName}`
+          }
         }
-        return browser.FSA.readFile(folderPath, request.name);
+        let rv = await browser.FSA.readFile(folderPath, request.fileName);
+        return {
+          file: rv.file,
+          folderId: request.folderId,
+        }
       }
 
     case "writeFile":
@@ -118,19 +123,24 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
         // Do we have permissions?
         let folderPath = await indexedDB.getFolderPath(request.folderId);
         if (!folderPath) {
-          // Invalid folderId
-          return null;
+          return {
+            error: `Invalid folderId <${request.folderId}>`
+          }
         }
         if (!await indexedDB.hasPermissions(P.WRITE, {
           folderPath,
-          fileName: request.name,
+          fileName: request.fileName,
           extensionId: sender.id
         })) {
-          // We should either fail or prompt.
-          console.log("No permission to write file", request.name)
-          return null;
+          return {
+            error: `Missing WRITE permission for ${request.folderId} / ${request.fileName}`
+          }
         }
-        return browser.FSA.writeFile(folderPath, request.name, request.file);
+        let rv = await browser.FSA.writeFile(request.file, folderPath, request.fileName);
+        return {
+          file: rv.file,
+          folderId: request.folderId,
+        }
       }
 
     default:

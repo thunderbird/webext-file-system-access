@@ -27,6 +27,7 @@
   const lazy = {}
   XPCOMUtils.defineLazyGlobalGetters(lazy, ["File", "FileReader"]);
 
+  // Returns the selected native file object (nsIFile).
   async function picker({ displayPath, mode, title, filters, defaultName }) {
     const task = Promise.withResolvers();
     const fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
@@ -69,63 +70,41 @@
         task.resolve();
       } else {
         switch (mode) {
-          case Ci.nsIFilePicker.modeGetFolder:
-            {
-              task.resolve({
-                folder: {
-                  name: fp.file.leafName,
-                  path: fp.file.path
-                }
-              });
-            }
-            break;
-          case Ci.nsIFilePicker.modeOpenMultiple:
-            {
-              let files = [];
-              let folder;
-              for (let file of fp.files) {
-                files.push(await lazy.File.createFromNsIFile(file));
-                // We assume that a picker cannot select files from different folders.
-                if (!folder) {
-                  folder = {
-                    name: file.parent.leafName,
-                    path: file.parent.path
-                  }
-                }
-              }
-              task.resolve({
-                files,
-                folder
-              });
-            }
-            break;
+          // case Ci.nsIFilePicker.modeGetFolder:
+          //   {
+          //     task.resolve({
+          //       folder: {
+          //         name: fp.file.leafName,
+          //         path: fp.file.path
+          //       }
+          //     });
+          //   }
+          //   break;
+          // case Ci.nsIFilePicker.modeOpenMultiple:
+          //   {
+          //     let files = [];
+          //     let folder;
+          //     for (let file of fp.files) {
+          //       files.push(await lazy.File.createFromNsIFile(file));
+          //       // We assume that a picker cannot select files from different folders.
+          //       if (!folder) {
+          //         folder = {
+          //           name: file.parent.leafName,
+          //           path: file.parent.path
+          //         }
+          //       }
+          //     }
+          //     task.resolve({
+          //       files,
+          //       folder
+          //     });
+          //   }
+          //   break;
           case Ci.nsIFilePicker.modeSave:
-            {
-              console
-              task.resolve({
-                file: {
-                  name: fp.file.leafName,
-                  path: fp.file.path
-                },
-                folder: {
-                  name: fp.file.parent.leafName,
-                  path: fp.file.parent.path
-                }
-              });
-            }
+          default: {
+            task.resolve(fp.file);
             break;
-          default:
-            {
-              let file = await lazy.File.createFromNsIFile(fp.file);
-              task.resolve({
-                file,
-                folder: {
-                  name: fp.file.parent.leafName,
-                  path: fp.file.parent.path
-                }
-              });
-            }
-            break;
+          }
         }
       }
     })
@@ -139,38 +118,85 @@
           newUID() {
             return Services.uuid.generateUUID().toString().substring(1, 37);
           },
-          async readFolderPicker(options) {
-            return picker({ ...options, mode: Ci.nsIFilePicker.modeGetFolder, title: "<Add-on name>: Select folder" })
-          },
-          async readFilePicker(options) {
-            return picker({ ...options, mode: Ci.nsIFilePicker.modeOpen, title: "<Add-on name>: Select file" })
-          },
-          async readFilesPicker(options) {
-            return picker({ ...options, mode: Ci.nsIFilePicker.modeOpenMultiple, title: "<Add-on name>: Select files" })
-          },
-          async saveFilePicker(file, options) {
-            const buffer = await file.arrayBuffer();
-            let rv = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave, title: "<Add-on name>: Save file" })
-            if (!rv) {
-              return null;
+          // async getFolderWithPicker(options) {
+          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeGetFolder, title: "<Add-on name>: Select folder" })
+          // },
+          // async readFilesWithPicker(options) {
+          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeOpenMultiple, title: "<Add-on name>: Select files" })
+          // },
+          async readFileWithPicker(options) {
+            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeOpen, title: "<Add-on name>: Select file" })
+            if (!nativePickedFile) {
+              return {
+                error: "Canceled by user"
+              };
             }
-            await IOUtils.write(rv.file.path, new Uint8Array(buffer));
-            return rv;
+            return {
+              file: await lazy.File.createFromNsIFile(nativePickedFile),
+              folder: {
+                name: nativePickedFile.parent.leafName,
+                path: nativePickedFile.parent.path
+              }
+            }
+          },
+          async writeFileWithPicker(file, options) {
+            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave, title: "<Add-on name>: Save file" })
+            if (!nativePickedFile) {
+              return {
+                error: "Canceled by user"
+              };
+            }
+
+            // Save the data.
+            const buffer = await file.arrayBuffer();
+            await IOUtils.write(nativePickedFile.path, new Uint8Array(buffer));
+
+            // Read back the saved file.
+            let nativeReadBackFile = Cc["@mozilla.org/file/local;1"].createInstance(
+              Ci.nsIFile
+            );
+            nativeReadBackFile.initWithPath(nativePickedFile.path);
+            return {
+              file: await lazy.File.createFromNsIFile(nativeReadBackFile),
+              folder: {
+                name: nativeReadBackFile.parent.leafName,
+                path: nativeReadBackFile.parent.path
+              }
+            }
           },
           async readFile(folderPath, fileName) {
             const path = PathUtils.join(folderPath, fileName);
             // Even though IOUtils is the new shiny thing to use, it does not
             // return the type. So we keep using an nsIFile.
-            let file = Cc["@mozilla.org/file/local;1"].createInstance(
+            let nativeFile = Cc["@mozilla.org/file/local;1"].createInstance(
               Ci.nsIFile
             );
-            file.initWithPath(path);
-            return lazy.File.createFromNsIFile(file);
+            nativeFile.initWithPath(path);
+            return {
+              file: await lazy.File.createFromNsIFile(nativeFile),
+              folder: {
+                name: nativeFile.parent.leafName,
+                path: nativeFile.parent.path
+              }
+            }
           },
-          async writeFile(folderPath, fileName, file) {
+          async writeFile(file, folderPath, fileName) {
             const path = PathUtils.join(folderPath, fileName);
             const buffer = await file.arrayBuffer();
             await IOUtils.write(path, new Uint8Array(buffer));
+
+            // Read back the saved file.
+            let nativeFile = Cc["@mozilla.org/file/local;1"].createInstance(
+              Ci.nsIFile
+            );
+            nativeFile.initWithPath(path);
+            return {
+              file: await lazy.File.createFromNsIFile(nativeFile),
+              folder: {
+                name: nativeFile.parent.leafName,
+                path: nativeFile.parent.path
+              }
+            }
           },
         },
       };

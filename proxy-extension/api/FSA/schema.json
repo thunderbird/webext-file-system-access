@@ -15,7 +15,7 @@
         "parameters": []
       },
       {
-        "name": "readFolderPicker",
+        "name": "getFolderWithPicker",
         "type": "function",
         "async": true,
         "parameters": [
@@ -27,7 +27,7 @@
         ]
       },
       {
-        "name": "readFilePicker",
+        "name": "readFileWithPicker",
         "type": "function",
         "async": true,
         "parameters": [
@@ -39,7 +39,7 @@
         ]
       },
       {
-        "name": "readFilesPicker",
+        "name": "readFilesWithPicker",
         "type": "function",
         "async": true,
         "parameters": [
@@ -51,14 +51,14 @@
         ]
       },
       {
-        "name": "saveFilePicker",
+        "name": "writeFileWithPicker",
         "type": "function",
         "async": true,
         "parameters": [
           {
             "name": "file",
             "type": "object",
-            "isInstanceOf": "File",
+            "isInstanceOf": "Blob",
             "additionalProperties": true
           },
           {
@@ -89,18 +89,18 @@
         "async": true,
         "parameters": [
           {
+            "name": "file",
+            "type": "object",
+            "isInstanceOf": "Blob",
+            "additionalProperties": true
+          },
+          {
             "name": "path",
             "type": "string"
           },
           {
             "name": "name",
             "type": "string"
-          },
-          {
-            "name": "file",
-            "type": "object",
-            "isInstanceOf": "File",
-            "additionalProperties": true
           }
         ]
       }

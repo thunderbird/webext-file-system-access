@@ -6,11 +6,11 @@ document.querySelectorAll("[data-l10n-content]").forEach(el => {
 });
 
 // Load current permissions.
-let permissions = await indexedDB.getAllPermissionsSorted();
+let permissionEntries = await indexedDB.getAllPermissionsSorted();
 
 // The permissions array is sorted by extensionIds.
 let lastExtensionId = null;
-for (let { fileName, folderPath, permission, extensionId } of permissions) {
+for (let { fileName, folderPath, permissions, extensionId } of permissionEntries) {
   // Add a header if we reached a new extension.
   if (lastExtensionId != extensionId) {
     lastExtensionId = extensionId;
@@ -58,13 +58,13 @@ for (let { fileName, folderPath, permission, extensionId } of permissions) {
       const option2 = document.createElement("option");
       option2.value = "1";
       option2.textContent = "read";
-      if (permission == 1) { option2.selected = true }
+      if (permissions == 1) { option2.selected = true }
       select.appendChild(option2);
 
       const option3 = document.createElement("option");
       option3.value = "3";
       option3.textContent = "read/write";
-      if (permission == 3) { option3.selected = true }
+      if (permissions == 3) { option3.selected = true }
       select.appendChild(option3);
       select.addEventListener("change", (e) => indexedDB.updatePermissions(e.target.value, { fileName, folderPath, extensionId }))
 

@@ -30,6 +30,13 @@ browser.action.onClicked.addListener(async () => {
         content: await singleFile.file.text()
     });
 
+    // Check permissions.
+    let permissions = await fsa.getPermissions(
+        singleFile.folderId,
+        singleFile.file.name
+    );
+    console.log("Granted Permissions are", permissions);
+
     // Re-read the just saved file, using the granted read permission.
     let reReadSavedFile = await fsa.readFile(
         singleFile.folderId,

@@ -1,7 +1,7 @@
 // ID of the proxy fsa add-on.
 const FSA_ID = "file-system-access@addons.thunderbird.net";
 
-async function fsa(request) {
+async function fsaRequest(request) {
     let error = null
     try {
         let rv = await browser.runtime.sendMessage(FSA_ID, request);
@@ -17,14 +17,14 @@ async function fsa(request) {
 }
 
 export function getVersion() {
-    return fsa({ command: "getVersion" });
+    return fsaRequest({ command: "getVersion" });
 }
 
 export function readFileWithPicker(
     { requestRead, requestWrite },
     { filters, defaultName, defaultFolderId }
 ) {
-    return fsa({
+    return fsaRequest({
         command: "readFileWithPicker",
         filters,
         defaultName,
@@ -39,7 +39,7 @@ export function writeFileWithPicker(
     { requestRead, requestWrite },
     { filters, defaultName, defaultFolderId }
 ) {
-    return fsa({
+    return fsaRequest({
         command: "writeFileWithPicker",
         file,
         filters,
@@ -50,11 +50,22 @@ export function writeFileWithPicker(
     });
 }
 
+export function getPermissions(folderId, fileName) {
+    if (!folderId || !fileName) {
+        throw new Error(`fsa.getPermissions(): Missing folderId or fileName parameter`);
+    }
+    return fsaRequest({
+        command: "getPermissions",
+        folderId,
+        fileName,
+    });
+}
+
 export function readFile(folderId, fileName) {
     if (!folderId || !fileName) {
         throw new Error(`fsa.readFile(): Missing folderId or fileName parameter`);
     }
-    return fsa({
+    return fsaRequest({
         command: "readFile",
         folderId,
         fileName,
@@ -65,7 +76,7 @@ export function writeFile(file, folderId, fileName) {
     if (!file || !folderId || !fileName) {
         throw new Error(`fsa.writeFile(): Missing file, folderId or fileName parameter`);
     }
-    return fsa({
+    return fsaRequest({
         command: "writeFile",
         file,
         folderId,

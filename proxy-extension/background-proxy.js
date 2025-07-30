@@ -112,77 +112,86 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
       };
     }
 
-    case "writeFileWithPicker":
-      {
-        let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-        let fsaFile = await browser.FSA.writeFileWithPicker(request.file, {
-          displayPath,
-          defaultName: request.defaultFileName,
-          filters: request.filters,
-        });
-        if (fsaFile.error) return fsaFile;
+    case "writeFileWithPicker": {
+      let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+      let fsaFile = await browser.FSA.writeFileWithPicker(request.file, {
+        displayPath,
+        defaultName: request.defaultFileName,
+        filters: request.filters,
+      });
+      if (fsaFile.error) return fsaFile;
 
-        await requestPersistentAccess(fsaFile.path, request, {
-          fileName: fsaFile.file.name,
-          folderPath: fsaFile.folder.path,
-          extensionId: sender.id
-        })
+      await requestPersistentAccess(fsaFile.path, request, {
+        fileName: fsaFile.file.name,
+        folderPath: fsaFile.folder.path,
+        extensionId: sender.id
+      })
 
+      return {
+        file: fsaFile.file,
+        folderId: await indexedDB.getFolderId(fsaFile.folder.path),
+      };
+    }
+
+    case "readFile": {
+      let folderPath = await indexedDB.getFolderPath(request.folderId);
+      if (!folderPath) {
         return {
-          file: fsaFile.file,
-          folderId: await indexedDB.getFolderId(fsaFile.folder.path),
-        };
-      }
-
-    case "readFile":
-      {
-        // Do we have permissions?
-        let folderPath = await indexedDB.getFolderPath(request.folderId);
-        if (!folderPath) {
-          return {
-            error: `Invalid folderId <${request.folderId}>`
-          }
-        }
-        if (!await indexedDB.hasPermissions(P.READ, {
-          folderPath,
-          fileName: request.fileName,
-          extensionId: sender.id
-        })) {
-          return {
-            error: `Missing READ permission for ${request.folderId} / ${request.fileName}`
-          }
-        }
-        let rv = await browser.FSA.readFile(folderPath, request.fileName);
-        return {
-          file: rv.file,
-          folderId: request.folderId,
+          error: `Invalid folderId <${request.folderId}>`
         }
       }
-
-    case "writeFile":
-      {
-        // Do we have permissions?
-        let folderPath = await indexedDB.getFolderPath(request.folderId);
-        if (!folderPath) {
-          return {
-            error: `Invalid folderId <${request.folderId}>`
-          }
-        }
-        if (!await indexedDB.hasPermissions(P.WRITE, {
-          folderPath,
-          fileName: request.fileName,
-          extensionId: sender.id
-        })) {
-          return {
-            error: `Missing WRITE permission for ${request.folderId} / ${request.fileName}`
-          }
-        }
-        let rv = await browser.FSA.writeFile(request.file, folderPath, request.fileName);
+      if (!await indexedDB.hasPermissions(P.READ, {
+        folderPath,
+        fileName: request.fileName,
+        extensionId: sender.id
+      })) {
         return {
-          file: rv.file,
-          folderId: request.folderId,
+          error: `Missing READ permission for ${request.folderId} / ${request.fileName}`
         }
       }
+      let rv = await browser.FSA.readFile(folderPath, request.fileName);
+      return {
+        file: rv.file,
+        folderId: request.folderId,
+      }
+    }
+
+    case "writeFile": {
+      let folderPath = await indexedDB.getFolderPath(request.folderId);
+      if (!folderPath) {
+        return {
+          error: `Invalid folderId <${request.folderId}>`
+        }
+      }
+      if (!await indexedDB.hasPermissions(P.WRITE, {
+        folderPath,
+        fileName: request.fileName,
+        extensionId: sender.id
+      })) {
+        return {
+          error: `Missing WRITE permission for ${request.folderId} / ${request.fileName}`
+        }
+      }
+      let rv = await browser.FSA.writeFile(request.file, folderPath, request.fileName);
+      return {
+        file: rv.file,
+        folderId: request.folderId,
+      }
+    }
+
+    case "getPermissions": {
+      let folderPath = await indexedDB.getFolderPath(request.folderId);
+      if (!folderPath) {
+        return {
+          error: `Invalid folderId <${request.folderId}>`
+        }
+      }
+      return await indexedDB.getPermissions({
+        folderPath,
+        fileName: request.fileName,
+        extensionId: sender.id
+      })
+    }
 
     default:
       return { error: "Invalid command" }

@@ -67,13 +67,24 @@ export async function getAllPermissionsSorted() {
 }
 
 /**
- * Check if the user has granted the requested permission for the given item.
+ * Check if the user has granted the requested permissions for the given item.
  *
- * @param {integer} reqPermission - The permission value to check.
+ * @param {integer} reqPermission - The permissions to check.
  * @param {Object} item - An object that has extensionId, folderPath, fileName.
- * @returns {Promise<Boolean>} Whether the permission was granted or not.
+ * @returns {Promise<Boolean>} Whether the requested permissions were granted or not.
  */
 export async function hasPermissions(reqPermission, item) {
+    let grantedPermissions = await getPermissions(item);
+    return (grantedPermissions & reqPermission) === reqPermission;
+}
+
+/**
+ * Get the granted permissions for the given item.
+ *
+ * @param {Object} item - An object that has extensionId, folderPath, fileName.
+ * @returns {Promise<Intger>} The granted permissions.
+ */
+export async function getPermissions(item) {
     const { promise, resolve, reject } = Promise.withResolvers();
 
     const db = await openDB();
@@ -84,15 +95,15 @@ export async function hasPermissions(reqPermission, item) {
     const key = [item.extensionId, item.folderPath, item.fileName];
     const getReq = index.get(key);
 
-    let granted = false;
+    let grantedPermissions = 0;
     getReq.onsuccess = () => {
         const record = getReq.result;
         if (record) {
-            granted = (record.permission & reqPermission) === reqPermission;
+            grantedPermissions = record.permissions;
         }
     };
 
-    tx.oncomplete = () => resolve(granted);
+    tx.oncomplete = () => resolve(grantedPermissions);
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
 
@@ -100,13 +111,13 @@ export async function hasPermissions(reqPermission, item) {
 }
 
 /**
- * Add or update the granted permission for the given item.
+ * Add or update the granted permissions for the given item.
  *
- * @param {integer} newPermission - The permission value to be stored.
+ * @param {integer} newPermissions - The permissions to be stored.
  * @param {Object} item - An object that has extensionId, folderPath, fileName.
  * @returns {Promise<Object>} The record that was written to the DB.
  */
-export async function updatePermissions(newPermission, item) {
+export async function updatePermissions(newPermissions, item) {
     const { promise, resolve, reject } = Promise.withResolvers();
 
     const db = await openDB();
@@ -122,7 +133,7 @@ export async function updatePermissions(newPermission, item) {
         const record = getReq.result;
 
         if (record) {
-            record.permission = newPermission;
+            record.permissions = newPermissions;
             // Same primary key (id) = update.
             store.put(record);
             savedRecord = record;
@@ -131,7 +142,7 @@ export async function updatePermissions(newPermission, item) {
                 extensionId: item.extensionId,
                 folderPath: item.folderPath,
                 fileName: item.fileName,
-                permission: newPermission
+                permissions: newPermissions
                 // No id = autoIncrement will create one.
             };
             const addReq = store.add(newRecord);
@@ -151,7 +162,7 @@ export async function updatePermissions(newPermission, item) {
 }
 
 /**
- * Remove the granted permission for the given item.
+ * Remove the granted permissions for the given item.
  *
  * @param {Object} item - An object that has extensionId, folderPath, fileName.
  */

@@ -63,7 +63,7 @@ This repository includes both the [`proxy add-on`](https://github.com/thunderbir
 
 ## **Attributions**
 
-The icon used in this extension is provided by [flaticon.com](https://www.flaticon.com/free-icons/login). The following attribution must appear on its Add-ons Thunderbird (ATN) page:
+The icons used in this repository are provided by [flaticon.com](https://www.flaticon.com/free-icons/login). The following attribution must appear on the public add-on listing (ATN):
 
 - **URL**: https://www.flaticon.com/free-icons/login  
 - **Title**: login icons  

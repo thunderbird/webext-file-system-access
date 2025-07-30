@@ -17,7 +17,12 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
     case "readFilePicker":
       {
         let displayPath = await indexedDB.getFolderPath(request.folderId);
-        let picker = await browser.FSA.readFilePicker({ displayPath });
+        let picker = await browser.FSA.readFilePicker({
+          displayPath,
+          defaultName: request.defaultName,
+          filters: request.filters,
+        });
+        if (!picker) return null;
         let folderId = await indexedDB.getFolderId(picker.folder.path);
         // The user selected the file and thus gave permission to re-read the same
         // file at a later time (without using the file picker).
@@ -33,10 +38,16 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
         };
       }
 
+
     case "readFilesPicker":
       {
         let displayPath = await indexedDB.getFolderPath(request.folderId);
-        let picker = await browser.FSA.readFilesPicker({ displayPath });
+        let picker = await browser.FSA.readFilesPicker({
+          displayPath,
+          defaultName: request.defaultName,
+          filters: request.filters,
+        });
+        if (!picker) return null;
         let folderId = await indexedDB.getFolderId(picker.folder.path);
         for (let file of picker.files) {
           await indexedDB.updatePermissions(P.READ, {
@@ -50,22 +61,26 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
           folderId,
         };
       }
-
     case "readFolderPicker":
       {
         let displayPath = await indexedDB.getFolderPath(request.folderId);
         let picker = await browser.FSA.readFolderPicker({ displayPath });
+        if (!picker) return null;
         let folderId = await indexedDB.getFolderId(picker.folder.path);
         // Permissions: TODO
         return {
           folderId
         };
       }
-
     case "saveFilePicker":
       {
         let displayPath = await indexedDB.getFolderPath(request.folderId);
-        let picker = await browser.FSA.saveFilePicker(request.file, { displayPath });
+        let picker = await browser.FSA.saveFilePicker(request.file, {
+          displayPath,
+          defaultName: request.defaultName,
+          filters: request.filters,
+        });
+        if (!picker) return null;
         let folderId = await indexedDB.getFolderId(picker.folder.path);
         await indexedDB.updatePermissions(P.READ | P.WRITE, {
           folderPath: picker.folder.path,

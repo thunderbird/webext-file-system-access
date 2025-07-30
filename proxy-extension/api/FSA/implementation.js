@@ -13,15 +13,27 @@
     "resource://gre/modules/XPCOMUtils.sys.mjs"
   );
 
+  const FILTERS = {
+    "all": Ci.nsIFilePicker.filterAll,
+    "html": Ci.nsIFilePicker.filterHTML,
+    "text": Ci.nsIFilePicker.filterText,
+    "images": Ci.nsIFilePicker.filterImages,
+    "xml": Ci.nsIFilePicker.filterXML,
+    "audio": Ci.nsIFilePicker.filterAudio,
+    "video": Ci.nsIFilePicker.filterVideo,
+    "pdf": Ci.nsIFilePicker.filterPDF,
+  }
+
   const lazy = {}
   XPCOMUtils.defineLazyGlobalGetters(lazy, ["File", "FileReader"]);
 
-  async function picker({ displayPath, mode, title }) {
+  async function picker({ displayPath, mode, title, filters, defaultName }) {
     const task = Promise.withResolvers();
     const fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
     const win = Services.wm.getMostRecentWindow(null);
     fp.init(win.browsingContext, title, mode);
 
+    // Handle default folder.
     if (displayPath) {
       let displayDirectory = Cc["@mozilla.org/file/local;1"].createInstance(
         Ci.nsIFile
@@ -34,10 +46,27 @@
       }
     }
 
-    // TODO: Filters (file types)
+    // Handle filters.
+    let validFilters = filters
+      ? filters.filter(f => (f.name && f.ext && f.ext.startsWith("*.")) || FILTERS[f.type])
+      : []
+    if (validFilters.length == 0) {
+      fp.appendFilters(Ci.nsIFilePicker.filterAll)
+    } else {
+      validFilters.forEach(f => f.name && f.ext && f.ext.startsWith("*.")
+        ? fp.appendFilter(f.name, f.ext)
+        : fp.appendFilters(FILTERS[f.type])
+      );
+    }
+
+    // Handle default name.
+    if (defaultName) {
+      fp.defaultString = defaultName;
+    }
+
     fp.open(async rv => {
       if (rv == Ci.nsIFilePicker.returnCancel) {
-        task.reject();
+        task.resolve();
       } else {
         switch (mode) {
           case Ci.nsIFilePicker.modeGetFolder:
@@ -122,6 +151,9 @@
           async saveFilePicker(file, options) {
             const buffer = await file.arrayBuffer();
             let rv = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave, title: "<Add-on name>: Save file" })
+            if (!rv) {
+              return null;
+            }
             await IOUtils.write(rv.file.path, new Uint8Array(buffer));
             return rv;
           },

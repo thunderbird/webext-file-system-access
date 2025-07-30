@@ -7,6 +7,44 @@ const P = {
   WRITE: 0x1 << 1,
 }
 
+async function requestPersistentAccess(
+  nativeFilePath,
+  { requestRead, requestWrite },
+  { fileName, folderPath, extensionId }
+) {
+  let info = await browser.management.get(extensionId);
+  
+  let permissions = 0
+  let labels = [];
+  if (requestRead) {
+    permissions |= P.READ;
+    labels.push("READ")
+  }
+  if (requestWrite) {
+    permissions |= P.WRITE;
+    labels.push("WRITE")
+  }
+
+  if (
+    permissions &&
+    !await indexedDB.hasPermissions(permissions, { fileName, folderPath, extensionId })
+  ) {
+    const title = "Extension Requesting File System Access";
+    const message = [
+      `The extension "${info.name}" is requesting persistent ${labels.join(" and ")} access to the following file:`,
+      ``,
+      `  ${nativeFilePath}`,
+      ``,
+      `Do you want to allow this?`,
+      `The persistent access will remain in effect until you revoke it manually in the options of the "File System Access" add-on.`
+    ].join("\n");
+    let granted = await browser.FSA.confirm(title, message);
+    if (granted) {
+      await indexedDB.updatePermissions(permissions, { fileName, folderPath, extensionId });
+    }
+  }
+}
+
 browser.runtime.onMessageExternal.addListener(async (request, sender) => {
   switch (request.command) {
     case "getVersion": {
@@ -49,47 +87,44 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
 
     case "readFileWithPicker": {
       let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-      let rv = await browser.FSA.readFileWithPicker({
+      let fsaFile = await browser.FSA.readFileWithPicker({
         displayPath,
         defaultName: request.defaultFileName,
         filters: request.filters,
       });
-      if (rv.error) return rv;
+      if (fsaFile.error) return fsaFile;
 
-      let folderId = await indexedDB.getFolderId(rv.folder.path);
-      // The user selected the file and thus gave permission to re-read the same
-      // file at a later time (without using the file picker).
-      // Note #1: Single one-time read via a file picker does not need the FSA add-on.
-      await indexedDB.updatePermissions(P.READ, {
-        folderPath: rv.folder.path,
-        fileName: rv.file.name,
+      await requestPersistentAccess(fsaFile.path, request, {
+        fileName: fsaFile.file.name,
+        folderPath: fsaFile.folder.path,
         extensionId: sender.id
-      });
+      })
+
       return {
-        file: rv.file,
-        folderId,
+        file: fsaFile.file,
+        folderId: await indexedDB.getFolderId(fsaFile.folder.path),
       };
     }
 
     case "writeFileWithPicker":
       {
         let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-        let rv = await browser.FSA.writeFileWithPicker(request.file, {
+        let fsaFile = await browser.FSA.writeFileWithPicker(request.file, {
           displayPath,
           defaultName: request.defaultFileName,
           filters: request.filters,
         });
-        if (rv.error) return rv;
+        if (fsaFile.error) return fsaFile;
 
-        let folderId = await indexedDB.getFolderId(rv.folder.path);
-        await indexedDB.updatePermissions(P.READ | P.WRITE, {
-          folderPath: rv.folder.path,
-          fileName: rv.file.name,
+        await requestPersistentAccess(fsaFile.path, request, {
+          fileName: fsaFile.file.name,
+          folderPath: fsaFile.folder.path,
           extensionId: sender.id
-        });
+        })
+
         return {
-          file: rv.file,
-          folderId,
+          file: fsaFile.file,
+          folderId: await indexedDB.getFolderId(fsaFile.folder.path),
         };
       }
 

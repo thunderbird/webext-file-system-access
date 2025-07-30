@@ -115,8 +115,9 @@
     getAPI(context) {
       return {
         FSA: {
-          newUID() {
-            return Services.uuid.generateUUID().toString().substring(1, 37);
+          confirm(title, msg) {
+            const win = Services.wm.getMostRecentWindow(null);
+            return Services.prompt.confirm(win, title, msg)
           },
           // async getFolderWithPicker(options) {
           //   return picker({ ...options, mode: Ci.nsIFilePicker.modeGetFolder })
@@ -133,6 +134,7 @@
             }
             return {
               file: await lazy.File.createFromNsIFile(nativePickedFile),
+              path: nativePickedFile.path,
               folder: {
                 name: nativePickedFile.parent.leafName,
                 path: nativePickedFile.parent.path
@@ -158,6 +160,7 @@
             nativeReadBackFile.initWithPath(nativePickedFile.path);
             return {
               file: await lazy.File.createFromNsIFile(nativeReadBackFile),
+              path: nativeReadBackFile.path,
               folder: {
                 name: nativeReadBackFile.parent.leafName,
                 path: nativeReadBackFile.parent.path
@@ -174,6 +177,7 @@
             nativeFile.initWithPath(path);
             return {
               file: await lazy.File.createFromNsIFile(nativeFile),
+              path: nativeFile.path,
               folder: {
                 name: nativeFile.parent.leafName,
                 path: nativeFile.parent.path
@@ -192,6 +196,7 @@
             nativeFile.initWithPath(path);
             return {
               file: await lazy.File.createFromNsIFile(nativeFile),
+              path: nativeFile.path,
               folder: {
                 name: nativeFile.parent.leafName,
                 path: nativeFile.parent.path

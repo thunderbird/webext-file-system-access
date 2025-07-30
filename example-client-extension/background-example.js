@@ -15,9 +15,15 @@ async function test() {
 
 
     // Test 1: Read a file using a file picker.
-    let singleFile = await fsa.readFileWithPicker({
-        filters: [{ name: "JSON", ext: "*.json" }],
-    });
+    let singleFile = await fsa.readFileWithPicker(
+        {
+            requestRead: true,
+            requestWrite: false
+        },
+        {
+            filters: [{ name: "JSON", ext: "*.json" }],
+        }
+    );
     if (!singleFile) return;
     console.log({
         singleFile,
@@ -29,11 +35,18 @@ async function test() {
 
     // Test 2: Write a file using a file picker. Should open the folder used in
     // the previous single file selection picker.
-    let savedFile = await fsa.writeFileWithPicker(new Blob(['1234567890']), {
-        filters: [{ type: "text" }],
-        defaultName: "juhu.json",
-        defaultFolderId: singleFile.folderId,
-    });
+    let savedFile = await fsa.writeFileWithPicker(
+        new Blob(['1234567890']), 
+        {
+            requestRead: true,
+            requestWrite: true,
+        },
+        {
+            filters: [{ type: "text" }],
+            defaultName: "juhu.json",
+            defaultFolderId: singleFile.folderId,
+        }
+    );
     if (!savedFile) return;
     console.log({
         savedFile,

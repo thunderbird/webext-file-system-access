@@ -20,22 +20,33 @@ export function getVersion() {
     return fsa({ command: "getVersion" });
 }
 
-export function readFileWithPicker({ filters, defaultName, defaultFolderId }) {
+export function readFileWithPicker(
+    { requestRead, requestWrite },
+    { filters, defaultName, defaultFolderId }
+) {
     return fsa({
         command: "readFileWithPicker",
         filters,
         defaultName,
-        defaultFolderId
+        defaultFolderId,
+        requestRead,
+        requestWrite,
     })
 };
 
-export function writeFileWithPicker(file, { filters, defaultName, defaultFolderId }) {
+export function writeFileWithPicker(
+    file,
+    { requestRead, requestWrite },
+    { filters, defaultName, defaultFolderId }
+) {
     return fsa({
         command: "writeFileWithPicker",
         file,
         filters,
         defaultName,
-        defaultFolderId
+        defaultFolderId,
+        requestRead,
+        requestWrite,
     });
 }
 

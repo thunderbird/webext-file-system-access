@@ -9,10 +9,19 @@
     ],
     "functions": [
       {
-        "name": "newUID",
+        "name": "confirm",
         "type": "function",
         "async": true,
-        "parameters": []
+        "parameters": [
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "msg",
+            "type": "string"
+          }
+        ]
       },
       {
         "name": "getFolderWithPicker",

@@ -18,13 +18,13 @@ Add-on developers can include the [`fsa.mjs`](https://github.com/thunderbird/web
   _Use this to check whether the proxy is available and notify the user that it is needed for a specific functionality._
 
 - `readFileWithPicker(FsaPermissions, FsaPickerOptions)`  
-  Opens a file picker dialog and returns an `FsaFile` object for the selected file. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
+  Opens a file picker dialog and returns an `FsaFile` object for the selected file. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed. Returns an `FsaFile` object.
 
 - `writeFileWithPicker(Blob, FsaPermissions, FsaPickerOptions)`  
-  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns an `FsaFile` object. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
+  Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns an `FsaFile` object. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed. Returns an `FsaFile` object.
 
 - `getFolderWithPicker(FsaPermissions, FsaPickerOptions)`  
-  Opens a folder picker dialog to select a folder. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the folder picker has closed.
+  Opens a folder picker dialog to select a folder. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the folder picker has closed. Returns the `folderId` of the selected folder.  
   _Only the `defaultFolderId` property of the `FsaPickerOptions` is evaluated, the other properties do not apply to folders._
 
 - `getPermissions(folderId, fileName)`  

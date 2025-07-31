@@ -124,9 +124,7 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
         extensionId: sender.id
       })
 
-      return {
-        folderId: await indexedDB.getFolderId(fsaFile.folder.path),
-      };
+      return indexedDB.getFolderId(fsaFile.folder.path);
     }
 
     case "readFileWithPicker": {

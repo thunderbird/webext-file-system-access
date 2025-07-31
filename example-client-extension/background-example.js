@@ -69,7 +69,7 @@ browser.menus.onClicked.addListener(async (info, tab) => {
         case "getFolderWithPicker":
             {
                 // Request read/write access to a folder.
-                let folder = await fsa.getFolderWithPicker(
+                let folderId = await fsa.getFolderWithPicker(
                     {
                         read: true,
                         write: true
@@ -77,16 +77,15 @@ browser.menus.onClicked.addListener(async (info, tab) => {
                     {
                     }
                 );
-                if (!folder) return;
+                if (!folderId) return;
                 console.log({
-                    folder,
-                    folderId: folder.folderId,
+                    folderId,
                 });
 
                 // Create a file in that folder
                 let savedFile = await fsa.writeFile(
                     new Blob(["This file was created without user interaction"]),
-                    folder.folderId,
+                    folderId,
                     "I-did-that.txt"
                 );
                 console.log({

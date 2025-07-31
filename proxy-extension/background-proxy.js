@@ -59,7 +59,7 @@ async function requestPersistentAccess(
 
   if (
     permissions &&
-    !await indexedDB.hasPermissions(permissions, { fileName, folderPath, extensionId })
+    !await checkPermissions(permissions, { fileName, folderPath, extensionId })
   ) {
     const title = browser.i18n.getMessage("permission.prompt.title");
     const message = [

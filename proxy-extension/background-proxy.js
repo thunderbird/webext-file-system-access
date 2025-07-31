@@ -10,7 +10,7 @@ const P = {
 // TODO:
 // * Add access to activity log?
 
-async function checkPermissions(reqPermission, {fileName, folderPath, extensionId}) {
+async function checkPermissions(reqPermission, { fileName, folderPath, extensionId }) {
   if (await indexedDB.hasPermissions(reqPermission, {
     fileName,
     folderPath,
@@ -18,7 +18,7 @@ async function checkPermissions(reqPermission, {fileName, folderPath, extensionI
   })) {
     return true;
   }
-  
+
   // Check if we have root access.
   if (await indexedDB.hasPermissions(reqPermission, {
     fileName: "*",
@@ -80,6 +80,34 @@ async function requestPersistentAccess(
       await indexedDB.updatePermissions(permissions, { fileName, folderPath, extensionId });
     }
   }
+}
+
+function isSafeFileName(fileName) {
+  if (!fileName || typeof fileName !== 'string') {
+    return false;
+  }
+
+  // Disallow any path separators and null byte.
+  if (
+    fileName.includes('/') ||
+    fileName.includes('\\') ||
+    fileName.includes('\0')
+  ) {
+    return false;
+  }
+
+  // Disallow Windows-reserved characters
+  const illegalChars = /[:*?"<>|]/;
+  if (illegalChars.test(fileName)) {
+    return false;
+  }
+
+  // Enforce max filename length
+  if (fileName.length > 255) {
+    return false;
+  }
+
+  return true;
 }
 
 browser.runtime.onMessageExternal.addListener(async (request, sender) => {
@@ -170,6 +198,11 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
     }
 
     case "readFile": {
+      if (!isSafeFileName(request.fileName)) {
+        return {
+          error: `Invalid filename <${request.fileName}>`
+        }
+      }
       let folderPath = await indexedDB.getFolderPath(request.folderId);
       if (!folderPath) {
         return {
@@ -193,6 +226,11 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
     }
 
     case "writeFile": {
+      if (!isSafeFileName(request.fileName)) {
+        return {
+          error: `Invalid filename <${request.fileName}>`
+        }
+      }
       let folderPath = await indexedDB.getFolderPath(request.folderId);
       if (!folderPath) {
         return {
@@ -216,6 +254,11 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
     }
 
     case "getPermissions": {
+      if (!isSafeFileName(request.fileName)) {
+        return {
+          error: `Invalid filename <${request.fileName}>`
+        }
+      }
       let folderPath = await indexedDB.getFolderPath(request.folderId);
       if (!folderPath) {
         return {

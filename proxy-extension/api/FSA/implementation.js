@@ -117,16 +117,13 @@
         FSA: {
           confirm(title, msg) {
             const win = Services.wm.getMostRecentWindow(null);
-            return Services.prompt.confirm(win, title, msg)
+            return Services.prompt.confirm(win, title, msg);
           },
-          // async getFolderWithPicker(options) {
-          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeGetFolder })
-          // },
           // async readFilesWithPicker(options) {
-          //   return picker({ ...options, mode: Ci.nsIFilePicker.modeOpenMultiple })
+          //   return await picker({ ...options, mode: Ci.nsIFilePicker.modeOpenMultiple })
           // },
           async readFileWithPicker(options) {
-            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeOpen })
+            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeOpen });
             if (!nativePickedFile) {
               return {
                 error: "Canceled by user"
@@ -134,7 +131,7 @@
             }
             return {
               file: await lazy.File.createFromNsIFile(nativePickedFile),
-              path: nativePickedFile.path,
+              nativePath: nativePickedFile.path,
               folder: {
                 name: nativePickedFile.parent.leafName,
                 path: nativePickedFile.parent.path
@@ -142,7 +139,7 @@
             }
           },
           async writeFileWithPicker(file, options) {
-            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave })
+            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeSave });
             if (!nativePickedFile) {
               return {
                 error: "Canceled by user"
@@ -160,13 +157,30 @@
             nativeReadBackFile.initWithPath(nativePickedFile.path);
             return {
               file: await lazy.File.createFromNsIFile(nativeReadBackFile),
-              path: nativeReadBackFile.path,
+              nativePath: nativeReadBackFile.path,
               folder: {
                 name: nativeReadBackFile.parent.leafName,
                 path: nativeReadBackFile.parent.path
               }
             }
           },
+          async getFolderWithPicker(options) {
+            let nativePickedFile = await picker({ ...options, mode: Ci.nsIFilePicker.modeGetFolder });
+            if (!nativePickedFile) {
+              return {
+                error: "Canceled by user"
+              };
+            }
+            return {
+              nativePath: nativePickedFile.path,
+              folder: {
+                name: nativePickedFile.leafName,
+                path: nativePickedFile.path
+              }
+            }
+          },
+
+
           async readFile(folderPath, fileName) {
             const path = PathUtils.join(folderPath, fileName);
             // Even though IOUtils is the new shiny thing to use, it does not
@@ -177,7 +191,7 @@
             nativeFile.initWithPath(path);
             return {
               file: await lazy.File.createFromNsIFile(nativeFile),
-              path: nativeFile.path,
+              nativePath: nativeFile.path,
               folder: {
                 name: nativeFile.parent.leafName,
                 path: nativeFile.parent.path
@@ -196,7 +210,7 @@
             nativeFile.initWithPath(path);
             return {
               file: await lazy.File.createFromNsIFile(nativeFile),
-              path: nativeFile.path,
+              nativePath: nativeFile.path,
               folder: {
                 name: nativeFile.parent.leafName,
                 path: nativeFile.parent.path

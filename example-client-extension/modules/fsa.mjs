@@ -50,6 +50,20 @@ export function writeFileWithPicker(
     });
 }
 
+export function getFolderWithPicker(
+    { read, write },
+    { filters, defaultName, defaultFolderId }
+) {
+    return fsaRequest({
+        command: "getFolderWithPicker",
+        filters,
+        defaultName,
+        defaultFolderId,
+        read,
+        write,
+    })
+};
+
 export function getPermissions(folderId, fileName) {
     if (!folderId || !fileName) {
         throw new Error(`fsa.getPermissions(): Missing folderId or fileName parameter`);

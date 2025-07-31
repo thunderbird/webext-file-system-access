@@ -17,7 +17,8 @@
     ]
   },
   "permissions": [
-    "storage"
+    "storage",
+    "menus"
   ],
   "icons": {
     "16": "assets/documentation16.png",
@@ -27,6 +28,7 @@
   },
   "action": {
     "allowed_spaces": [],
-    "default_label": "FilePicker"
+    "default_label": "FSA Example",
+    "type": "menu"
   }
 }

@@ -11,17 +11,26 @@
     "permission.write.label": {
         "message": "WRITE"
     },
+    "permission.target.file": {
+        "message": "file"
+    },
+    "permission.target.folder": {
+        "message": "folder"
+    },
     "permission.prompt.title": {
         "message": "Extension Requesting File System Access"
     },
     "permission.prompt.line1": {
-        "message": "The extension \"$NAME$\" is requesting persistent $PERMISSIONS$ access to the following file:",
+        "message": "The extension \"$NAME$\" is requesting persistent $PERMISSIONS$ access to the following $TARGET$:",
         "placeholders": {
             "name": {
                 "content": "$1"
             },
             "permissions": {
                 "content": "$2"
+            },
+            "target": {
+                "content": "$3"
             }
         }
     },

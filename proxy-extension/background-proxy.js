@@ -10,11 +10,40 @@ const P = {
 // TODO:
 // * Add access to activity log?
 
+async function checkPermissions(reqPermission, {fileName, folderPath, extensionId}) {
+  if (await indexedDB.hasPermissions(reqPermission, {
+    fileName,
+    folderPath,
+    extensionId,
+  })) {
+    return true;
+  }
+  
+  // Check if we have root access.
+  if (await indexedDB.hasPermissions(reqPermission, {
+    fileName: "*",
+    folderPath,
+    extensionId,
+  })) {
+    return true;
+  }
+  return false;
+}
+
 async function requestPersistentAccess(
   nativeFilePath,
   { read, write },
-  { fileName, folderPath, extensionId }
+  { rootAccess, fileName, folderPath, extensionId }
 ) {
+  // Internally, fileName == "*" is used to reflect persistent root access to a
+  // folder. However, we may never request persistent root access via "*" directly,
+  // this must be done via rootAccess == true. 
+  if (rootAccess) {
+    fileName = "*";
+  } else if (fileName == "*") {
+    throw new Error(`FSA.requestPersistentAccess(): Invalid file name "*"`);
+  }
+
   let info = await browser.management.get(extensionId);
 
   let permissions = 0
@@ -35,7 +64,9 @@ async function requestPersistentAccess(
     const title = browser.i18n.getMessage("permission.prompt.title");
     const message = [
       browser.i18n.getMessage("permission.prompt.line1", [
-        info.name, labels.join("/")
+        info.name,
+        labels.join("/"),
+        browser.i18n.getMessage(rootAccess ? "permission.target.folder" : "permission.target.file")
       ]),
       ``,
       `  ${nativeFilePath}`,
@@ -80,16 +111,23 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
     //   };
     // }
 
-    // case "getFolderWithPicker": {
-    //   let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-    //   let picker = await browser.FSA.getFolderWithPicker({ displayPath });
-    //   if (!picker) return null;
-    //   let folderId = await indexedDB.getFolderId(picker.folder.path);
-    //   // Permissions: TODO
-    //   return {
-    //     folderId
-    //   };
-    // }
+    case "getFolderWithPicker": {
+      let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+      let fsaFile = await browser.FSA.getFolderWithPicker({
+        displayPath
+      });
+      if (fsaFile.error) return fsaFile;
+
+      await requestPersistentAccess(fsaFile.nativePath, request, {
+        rootAccess: true,
+        folderPath: fsaFile.folder.path,
+        extensionId: sender.id
+      })
+
+      return {
+        folderId: await indexedDB.getFolderId(fsaFile.folder.path),
+      };
+    }
 
     case "readFileWithPicker": {
       let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
@@ -100,7 +138,7 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
       });
       if (fsaFile.error) return fsaFile;
 
-      await requestPersistentAccess(fsaFile.path, request, {
+      await requestPersistentAccess(fsaFile.nativePath, request, {
         fileName: fsaFile.file.name,
         folderPath: fsaFile.folder.path,
         extensionId: sender.id
@@ -121,7 +159,7 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
       });
       if (fsaFile.error) return fsaFile;
 
-      await requestPersistentAccess(fsaFile.path, request, {
+      await requestPersistentAccess(fsaFile.nativePath, request, {
         fileName: fsaFile.file.name,
         folderPath: fsaFile.folder.path,
         extensionId: sender.id
@@ -140,7 +178,7 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
           error: `Invalid folderId <${request.folderId}>`
         }
       }
-      if (!await indexedDB.hasPermissions(P.READ, {
+      if (!await checkPermissions(P.READ, {
         folderPath,
         fileName: request.fileName,
         extensionId: sender.id
@@ -163,7 +201,7 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
           error: `Invalid folderId <${request.folderId}>`
         }
       }
-      if (!await indexedDB.hasPermissions(P.WRITE, {
+      if (!await checkPermissions(P.WRITE, {
         folderPath,
         fileName: request.fileName,
         extensionId: sender.id

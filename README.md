@@ -23,6 +23,10 @@ Add-on developers can include the [`fsa.mjs`](https://github.com/thunderbird/web
 - `writeFileWithPicker(Blob, FsaPermissions, FsaPickerOptions)`  
   Opens a file picker dialog, saves the provided `Blob` to the selected location, and returns an `FsaFile` object. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the file picker has closed.
 
+- `getFolderWithPicker(FsaPermissions, FsaPickerOptions)`  
+  Opens a folder picker dialog to select a folder. If the permissions specified in the `FsaPermissions` object have not yet been granted, the user is prompted for the permissions after the folder picker has closed.
+  _Only the `defaultFolderId` property of the `FsaPickerOptions` is evaluated, the other properties do not apply to folders._
+
 - `getPermissions(folderId, fileName)`  
   Returns a `FsaPermissions` object with the current permissions for the specified item.
 

@@ -41,7 +41,6 @@ export function openDB() {
 }
 
 async function notifyListeners(change) {
-    console.log("Notify listeners", change);
     for (let listener of LISTENERS) {
         listener(change);
     }

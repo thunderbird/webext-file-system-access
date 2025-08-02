@@ -97,3 +97,17 @@ for (let { fileName, folderPath, permissions, extensionId } of permissionEntries
     document.body.appendChild(itemContainer);
   }
 }
+
+
+// Handle DB changes.
+async function handleDbChanges(request) {
+  console.log("onChange", request)
+}
+browser.runtime.onMessage.addListener(request => {
+  if (request.command == "onChange") {
+    return Promise.resolve().then(
+      () => handleDbChanges(request)
+    )
+  }
+  return false;
+});

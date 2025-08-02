@@ -305,5 +305,5 @@ browser.runtime.onMessage.addListener((request) => {
 
 // Register listener for DB changes.
 indexedDB.registerListener(change => {
-  console.log("Received changes", change);
+  browser.runtime.sendMessage({command: "onChange", change})
 })

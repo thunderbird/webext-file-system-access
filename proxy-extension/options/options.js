@@ -1,12 +1,28 @@
-import * as indexedDB from '../modules/indexdb.mjs'
+// Wrappers to interact with the DB. We do not directly load indexedDB.mjs here, but instead
+// send requests to the background, to have a single instance manipulating the DB.
+function getAllPermissionsSorted() {
+  return browser.runtime.sendMessage({ command: "getAllPermissionsSorted", parameters: [] });
+}
+function removePermissionsForExtension(extensionId) {
+  return browser.runtime.sendMessage({ command: "removePermissionsForExtension", parameters: [extensionId] });
+}
+function updatePermissions(newPermissions, item) {
+  return browser.runtime.sendMessage({ command: "updatePermissions", parameters: [newPermissions, item] });
+}
+function removePermissions(item) {
+  return browser.runtime.sendMessage({ command: "removePermissions", parameters: [item] });
+}
+
 
 // Localize the options page.
 document.querySelectorAll("[data-l10n-content]").forEach(el => {
   el.textContent = browser.i18n.getMessage(el.dataset.l10nContent);
 });
 
+
 // Load current permissions.
-let permissionEntries = await indexedDB.getAllPermissionsSorted();
+let permissionEntries = await getAllPermissionsSorted()
+
 
 // The permissions array is sorted by extensionIds.
 let lastExtensionId = null;
@@ -31,7 +47,7 @@ for (let { fileName, folderPath, permissions, extensionId } of permissionEntries
     // "Revoke All" button on the right
     const revokeAllBtn = document.createElement("button");
     revokeAllBtn.textContent = "Revoke All";
-    revokeAllBtn.addEventListener("click", () => indexedDB.removePermissionsForExtension(extensionId))
+    revokeAllBtn.addEventListener("click", () => removePermissionsForExtension(extensionId))
 
     // Assemble header
     header.append(title, revokeAllBtn);
@@ -66,7 +82,7 @@ for (let { fileName, folderPath, permissions, extensionId } of permissionEntries
       option3.textContent = "read/write";
       if (permissions == 3) { option3.selected = true }
       select.appendChild(option3);
-      select.addEventListener("change", (e) => indexedDB.updatePermissions(e.target.value, { fileName, folderPath, extensionId }))
+      select.addEventListener("change", (e) => updatePermissions(e.target.value, { fileName, folderPath, extensionId }))
 
       itemContainer.appendChild(select);
     }
@@ -75,7 +91,7 @@ for (let { fileName, folderPath, permissions, extensionId } of permissionEntries
     {
       const revokeButton = document.createElement("button");
       revokeButton.textContent = "Revoke";
-      revokeButton.addEventListener("click", () => indexedDB.removePermissions({ fileName, folderPath, extensionId }))
+      revokeButton.addEventListener("click", () => removePermissions({ fileName, folderPath, extensionId }))
       itemContainer.appendChild(revokeButton);
     }
     document.body.appendChild(itemContainer);

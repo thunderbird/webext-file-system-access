@@ -174,7 +174,7 @@ export async function updatePermissions(newPermissions, item) {
     tx.onabort = () => reject(tx.error);
 
     let rv = await promise;
-    await notifyListeners({action, item, data: savedRecord});
+    await notifyListeners({ action, item, data: savedRecord });
     return rv;
 }
 
@@ -208,7 +208,7 @@ export async function removePermissions(item) {
 
     let rv = await promise;
     if (removedRecord) {
-        await notifyListeners({action: "removed", item, data: removedRecord.id});
+        await notifyListeners({ action: "removed", item, data: removedRecord.id });
     }
     return rv;
 }
@@ -236,7 +236,7 @@ export async function removePermissionsForExtension(extensionId) {
     tx.onabort = () => reject(tx.error);
 
     let rv = await promise;
-    await notifyListeners({action: "removedExtension", data: extensionId });
+    await notifyListeners({ action: "removedExtension", data: extensionId });
     return rv;
 }
 

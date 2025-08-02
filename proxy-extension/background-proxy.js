@@ -110,179 +110,198 @@ function isSafeFileName(fileName) {
   return true;
 }
 
-browser.runtime.onMessageExternal.addListener(async (request, sender) => {
-  switch (request.command) {
-    case "getVersion": {
-      const manifest = browser.runtime.getManifest();
-      return manifest.version;
-    }
-
-    // case "readFilesWithPicker": {
-    //   let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-    //   let picker = await browser.FSA.readFilesWithPicker({
-    //     displayPath,
-    //     defaultName: request.defaultFileName,
-    //     filters: request.filters,
-    //   });
-    //   if (!picker) return null;
-    //   let folderId = await indexedDB.getFolderId(picker.folder.path);
-    //   for (let file of picker.files) {
-    //     await indexedDB.updatePermissions(P.READ, {
-    //       folderPath: picker.folder.path,
-    //       fileName: file.name,
-    //       extensionId: sender.id
-    //     });
-    //   }
-    //   return {
-    //     files: picker.files,
-    //     folderId,
-    //   };
-    // }
-
-    case "getFolderWithPicker": {
-      let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-      let fsaFile = await browser.FSA.getFolderWithPicker({
-        displayPath
-      });
-      if (fsaFile.error) return fsaFile;
-
-      await requestPersistentAccess(fsaFile.nativePath, request, {
-        rootAccess: true,
-        folderPath: fsaFile.folder.path,
-        extensionId: sender.id
-      })
-
-      return indexedDB.getFolderId(fsaFile.folder.path);
-    }
-
-    case "readFileWithPicker": {
-      let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-      let fsaFile = await browser.FSA.readFileWithPicker({
-        displayPath,
-        defaultName: request.defaultFileName,
-        filters: request.filters,
-      });
-      if (fsaFile.error) return fsaFile;
-
-      await requestPersistentAccess(fsaFile.nativePath, request, {
-        fileName: fsaFile.file.name,
-        folderPath: fsaFile.folder.path,
-        extensionId: sender.id
-      })
-
-      return {
-        file: fsaFile.file,
-        folderId: await indexedDB.getFolderId(fsaFile.folder.path),
-      };
-    }
-
-    case "writeFileWithPicker": {
-      let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
-      let fsaFile = await browser.FSA.writeFileWithPicker(request.file, {
-        displayPath,
-        defaultName: request.defaultFileName,
-        filters: request.filters,
-      });
-      if (fsaFile.error) return fsaFile;
-
-      await requestPersistentAccess(fsaFile.nativePath, request, {
-        fileName: fsaFile.file.name,
-        folderPath: fsaFile.folder.path,
-        extensionId: sender.id
-      })
-
-      return {
-        file: fsaFile.file,
-        folderId: await indexedDB.getFolderId(fsaFile.folder.path),
-      };
-    }
-
-    case "readFile": {
-      if (!isSafeFileName(request.fileName)) {
-        return {
-          error: `Invalid filename <${request.fileName}>`
-        }
-      }
-      let folderPath = await indexedDB.getFolderPath(request.folderId);
-      if (!folderPath) {
-        return {
-          error: `Invalid folderId <${request.folderId}>`
-        }
-      }
-      if (!await checkPermissions(P.READ, {
-        folderPath,
-        fileName: request.fileName,
-        extensionId: sender.id
-      })) {
-        return {
-          error: `Missing READ permission for ${request.folderId} / ${request.fileName}`
-        }
-      }
-      let rv = await browser.FSA.readFile(folderPath, request.fileName);
-      return {
-        file: rv.file,
-        folderId: request.folderId,
-      }
-    }
-
-    case "writeFile": {
-      if (!isSafeFileName(request.fileName)) {
-        return {
-          error: `Invalid filename <${request.fileName}>`
-        }
-      }
-      let folderPath = await indexedDB.getFolderPath(request.folderId);
-      if (!folderPath) {
-        return {
-          error: `Invalid folderId <${request.folderId}>`
-        }
-      }
-      if (!await checkPermissions(P.WRITE, {
-        folderPath,
-        fileName: request.fileName,
-        extensionId: sender.id
-      })) {
-        return {
-          error: `Missing WRITE permission for ${request.folderId} / ${request.fileName}`
-        }
-      }
-      let rv = await browser.FSA.writeFile(request.file, folderPath, request.fileName);
-      return {
-        file: rv.file,
-        folderId: request.folderId,
-      }
-    }
-
-    case "getPermissions": {
-      if (!isSafeFileName(request.fileName)) {
-        return {
-          error: `Invalid filename <${request.fileName}>`
-        }
-      }
-      let folderPath = await indexedDB.getFolderPath(request.folderId);
-      if (!folderPath) {
-        return {
-          error: `Invalid folderId <${request.folderId}>`
-        }
-      }
-      let rv = await indexedDB.getPermissions({
-        folderPath,
-        fileName: request.fileName,
-        extensionId: sender.id
-      })
-      return {
-        read: !!(rv & P.READ),
-        write: !!(rv & P.WRITE)
-      }
-    }
-
-    default:
-      return { error: "Invalid command" }
-  }
-})
-
 // Revoke permissions for removed extensions.
 browser.management.onUninstalled.addListener(info => indexedDB.removePermissionsForExtension(info.id));
+
+// React on external API requests.
+const handleExternalRequests = {
+  async getVersion(request, sender) {
+    const manifest = browser.runtime.getManifest();
+    return manifest.version;
+  },
+
+  // readFilesWithPicker(request, sender) {
+  //   let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+  //   let picker = await browser.FSA.readFilesWithPicker({
+  //     displayPath,
+  //     defaultName: request.defaultFileName,
+  //     filters: request.filters,
+  //   });
+  //   if (!picker) return null;
+  //   let folderId = await indexedDB.getFolderId(picker.folder.path);
+  //   for (let file of picker.files) {
+  //     await indexedDB.updatePermissions(P.READ, {
+  //       folderPath: picker.folder.path,
+  //       fileName: file.name,
+  //       extensionId: sender.id
+  //     });
+  //   }
+  //   return {
+  //     files: picker.files,
+  //     folderId,
+  //   };
+  // },
+
+  async getFolderWithPicker(request, sender) {
+    let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+    let fsaFile = await browser.FSA.getFolderWithPicker({
+      displayPath
+    });
+    if (fsaFile.error) return fsaFile;
+
+    await requestPersistentAccess(fsaFile.nativePath, request, {
+      rootAccess: true,
+      folderPath: fsaFile.folder.path,
+      extensionId: sender.id
+    })
+
+    return indexedDB.getFolderId(fsaFile.folder.path);
+  },
+
+  async readFileWithPicker(request, sender) {
+    let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+    let fsaFile = await browser.FSA.readFileWithPicker({
+      displayPath,
+      defaultName: request.defaultFileName,
+      filters: request.filters,
+    });
+    if (fsaFile.error) return fsaFile;
+
+    await requestPersistentAccess(fsaFile.nativePath, request, {
+      fileName: fsaFile.file.name,
+      folderPath: fsaFile.folder.path,
+      extensionId: sender.id
+    })
+
+    return {
+      file: fsaFile.file,
+      folderId: await indexedDB.getFolderId(fsaFile.folder.path),
+    };
+  },
+
+  async writeFileWithPicker(request, sender) {
+    let displayPath = await indexedDB.getFolderPath(request.defaultFolderId);
+    let fsaFile = await browser.FSA.writeFileWithPicker(request.file, {
+      displayPath,
+      defaultName: request.defaultFileName,
+      filters: request.filters,
+    });
+    if (fsaFile.error) return fsaFile;
+
+    await requestPersistentAccess(fsaFile.nativePath, request, {
+      fileName: fsaFile.file.name,
+      folderPath: fsaFile.folder.path,
+      extensionId: sender.id
+    })
+
+    return {
+      file: fsaFile.file,
+      folderId: await indexedDB.getFolderId(fsaFile.folder.path),
+    };
+  },
+
+  async readFile(request, sender) {
+    if (!isSafeFileName(request.fileName)) {
+      return {
+        error: `Invalid filename <${request.fileName}>`
+      }
+    }
+    let folderPath = await indexedDB.getFolderPath(request.folderId);
+    if (!folderPath) {
+      return {
+        error: `Invalid folderId <${request.folderId}>`
+      }
+    }
+    if (!await checkPermissions(P.READ, {
+      folderPath,
+      fileName: request.fileName,
+      extensionId: sender.id
+    })) {
+      return {
+        error: `Missing READ permission for ${request.folderId} / ${request.fileName}`
+      }
+    }
+    let rv = await browser.FSA.readFile(folderPath, request.fileName);
+    return {
+      file: rv.file,
+      folderId: request.folderId,
+    }
+  },
+
+  async writeFile(request, sender) {
+    if (!isSafeFileName(request.fileName)) {
+      return {
+        error: `Invalid filename <${request.fileName}>`
+      }
+    }
+    let folderPath = await indexedDB.getFolderPath(request.folderId);
+    if (!folderPath) {
+      return {
+        error: `Invalid folderId <${request.folderId}>`
+      }
+    }
+    if (!await checkPermissions(P.WRITE, {
+      folderPath,
+      fileName: request.fileName,
+      extensionId: sender.id
+    })) {
+      return {
+        error: `Missing WRITE permission for ${request.folderId} / ${request.fileName}`
+      }
+    }
+    let rv = await browser.FSA.writeFile(request.file, folderPath, request.fileName);
+    return {
+      file: rv.file,
+      folderId: request.folderId,
+    }
+  },
+
+  async getPermissions(request, sender) {
+    if (!isSafeFileName(request.fileName)) {
+      return {
+        error: `Invalid filename <${request.fileName}>`
+      }
+    }
+    let folderPath = await indexedDB.getFolderPath(request.folderId);
+    if (!folderPath) {
+      return {
+        error: `Invalid folderId <${request.folderId}>`
+      }
+    }
+    let rv = await indexedDB.getPermissions({
+      folderPath,
+      fileName: request.fileName,
+      extensionId: sender.id
+    })
+    return {
+      read: !!(rv & P.READ),
+      write: !!(rv & P.WRITE)
+    }
+  }
+}
+browser.runtime.onMessageExternal.addListener((request, sender) => {
+  if (handleExternalRequests[request.command]) {
+    return Promise.resolve().then(
+      () => handleExternalRequests[request.command](request, sender)
+    );
+  }
+  return false;
+})
+
+// React on internal API requests (for example from the options page).
+browser.runtime.onMessage.addListener((request) => {
+  if ([
+    "getAllPermissionsSorted",
+    "removePermissionsForExtension",
+    "updatePermissions",
+    "removePermissions"
+  ].includes(request.command)) {
+    return Promise.resolve().then(
+      () => indexedDB[request.command](...request.parameters)
+    );
+  }
+  return false;
+})
 
 // Register listener for DB changes.
 indexedDB.registerListener(change => {

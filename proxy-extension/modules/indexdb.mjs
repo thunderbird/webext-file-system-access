@@ -1,4 +1,5 @@
 const dbName = "FSA";
+const LISTENERS = [];
 
 export function openDB() {
     return new Promise((resolve, reject) => {
@@ -37,6 +38,17 @@ export function openDB() {
             }
         };
     });
+}
+
+async function notifyListeners(change) {
+    console.log("Notify listeners", change);
+    for (let listener of LISTENERS) {
+        listener(change);
+    }
+}
+
+export function registerListener(listener) {
+    LISTENERS.push(listener);
 }
 
 /**
@@ -128,16 +140,19 @@ export async function updatePermissions(newPermissions, item) {
     const key = [item.extensionId, item.folderPath, item.fileName];
     const getReq = index.get(key);
 
+    let action;
     let savedRecord;
     getReq.onsuccess = () => {
         const record = getReq.result;
 
         if (record) {
+            action = "updated"
             record.permissions = newPermissions;
             // Same primary key (id) = update.
             store.put(record);
             savedRecord = record;
         } else {
+            action = "added"
             const newRecord = {
                 extensionId: item.extensionId,
                 folderPath: item.folderPath,
@@ -158,7 +173,9 @@ export async function updatePermissions(newPermissions, item) {
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
 
-    return promise;
+    let rv = await promise;
+    await notifyListeners({action, item, data: savedRecord});
+    return rv;
 }
 
 /**
@@ -177,10 +194,11 @@ export async function removePermissions(item) {
     const key = [item.extensionId, item.folderPath, item.fileName];
     const getReq = index.get(key);
 
+    let removedRecord;
     getReq.onsuccess = () => {
-        const record = getReq.result;
-        if (record) {
-            store.delete(record.id);
+        removedRecord = getReq.result;
+        if (removedRecord) {
+            store.delete(removedRecord.id);
         }
     };
 
@@ -188,7 +206,11 @@ export async function removePermissions(item) {
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
 
-    return promise;
+    let rv = await promise;
+    if (removedRecord) {
+        await notifyListeners({action: "removed", item, data: removedRecord.id});
+    }
+    return rv;
 }
 
 export async function removePermissionsForExtension(extensionId) {
@@ -213,7 +235,9 @@ export async function removePermissionsForExtension(extensionId) {
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
 
-    return promise;
+    let rv = await promise;
+    await notifyListeners({action: "removedExtension", data: extensionId });
+    return rv;
 }
 
 // export async function addItem(item, storeName) {

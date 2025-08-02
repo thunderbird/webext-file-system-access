@@ -283,3 +283,8 @@ browser.runtime.onMessageExternal.addListener(async (request, sender) => {
 
 // Revoke permissions for removed extensions.
 browser.management.onUninstalled.addListener(info => indexedDB.removePermissionsForExtension(info.id));
+
+// Register listener for DB changes.
+indexedDB.registerListener(change => {
+  console.log("Received changes", change);
+})

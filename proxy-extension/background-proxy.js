@@ -2,13 +2,14 @@ import * as indexedDB from './modules/indexedDB.mjs'
 
 "use strict";
 
+// TODO:
+// * Add access to activity log?
+// * Allow clients to register listeners?
+
 const P = {
   READ: 0x1 << 0,
   WRITE: 0x1 << 1,
 }
-
-// TODO:
-// * Add access to activity log?
 
 async function checkPermissions(reqPermission, { fileName, folderPath, extensionId }) {
   if (await indexedDB.hasPermissions(reqPermission, {

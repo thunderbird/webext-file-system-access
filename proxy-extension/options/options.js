@@ -3,34 +3,38 @@ document.querySelectorAll("[data-l10n-content]").forEach(el => {
   el.textContent = browser.i18n.getMessage(el.dataset.l10nContent);
 });
 
-init();
+initUI();
 
 
-// --- Functions ---  
+// --- Listeners for DB changes
 
-// React on DB changes. 
+
 async function onAddedPermissions(extensionId, folderPath, fileName, permissions) {
   console.log("onAdded", { extensionId, folderPath, fileName, permissions })
   // Lazy. Clear everything and rebuild.
-  init();
+  initUI();
 }
 async function onUpdatedPermissions(extensionId, folderPath, fileName, permissions) {
   console.log("onUpdatde", { extensionId, folderPath, fileName, permissions })
   // Lazy. Clear everything and rebuild.
-  init();
+  initUI();
 }
 async function onRevokedPermissions(extensionId, folderPath, fileName) {
   console.log("onRevoked", { extensionId, folderPath, fileName })
   // Lazy. Clear everything and rebuild.
-  init();
+  initUI();
 }
 async function onRevokedAllPermissions(extensionId) {
   console.log("onRevokedAllPermissions", { extensionId })
   // Lazy. Clear everything and rebuild.
-  init();
+  initUI();
 }
 
-async function init() {
+
+// --- UI ---  
+
+
+async function initUI() {
   // Load current permissions.
   let permissionEntries = await getAllPermissionsSorted()
 
@@ -114,7 +118,9 @@ async function init() {
   document.getElementById("container").replaceWith(container);
 }
 
-// --- Background communication ---
+
+// --- Background communication / glue code ---
+
 
 // Wrappers to interact with the DB. We do not directly load indexedDB.mjs here, but instead
 // send requests to the background, to have a single instance manipulating the DB.

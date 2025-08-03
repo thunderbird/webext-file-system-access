@@ -305,5 +305,11 @@ browser.runtime.onMessage.addListener((request) => {
 
 // Register listener for DB changes.
 indexedDB.registerListener(change => {
-  browser.runtime.sendMessage({command: "onChange", change})
+  if (["added", "updated"].includes(change.action)) {
+    change.permissions = {
+      read: !!(change.permissions & P.READ),
+      write: !!(change.permissions & P.WRITE),
+    }
+  }
+  browser.runtime.sendMessage(change)
 })

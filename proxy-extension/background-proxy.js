@@ -1,4 +1,4 @@
-import * as indexedDB from './modules/indexdb.mjs'
+import * as indexedDB from './modules/indexedDB.mjs'
 
 "use strict";
 

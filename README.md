@@ -10,7 +10,7 @@ The VFS-Toolkit is a WebExtension framework that provides virtual file system ac
 
 - **Client extensions** import the `vfs-client` module, which provides a unified API for file operations (`readFile`, `writeFile`, `list`, etc.) and a built-in file picker UI.
 - **Storage providers** are independent add-ons that register themselves with the VFS-Toolkit and expose their storage backend (WebDAV servers, local folders, etc.) to any client extension.
-- **OPFS (Origin Private File System)** is the built-in default storage — a sandboxed virtual filesystem provided by the browser, requiring no additional provider add-on.
+- **OPFS (Origin Private File System)** is the built-in default storage — a sandboxed virtual filesystem provided through a [Web API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) (usable in Thunderbird and browsers like Firefox), requiring no additional provider add-on.
 - The **file picker** supports all registered providers in a single UI, letting users browse, select, and manage files across different storage backends.
 
 ### Available providers
